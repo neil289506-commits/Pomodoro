@@ -48,11 +48,17 @@ jobs:
           host: ${{ matrix.qt_host }}
           target: desktop
           arch: ${{ matrix.qt_arch }}
-          modules: qtspeech
+          modules: qtspeech qtmultimedia
           cache: true
 
       - name: Configure
-        run: cmake -S linux -B build-${{ matrix.name }} -G Ninja -DCMAKE_BUILD_TYPE=Release -DPOMO_REQUIRE_TTS=ON -DCMAKE_CXX_COMPILER=g++
+        shell: bash
+        run: |
+          set -eo pipefail
+          # 失敗時把 CMake 的錯誤訊息輸出成註解（完整記錄需要登入才能看）
+          exec > >(tee configure.log) 2>&1
+          trap 'sleep 1; grep -E -B1 -A7 "CMake Error" configure.log | head -40 | while IFS= read -r l; do echo "::error::${l:0:380}"; done' ERR
+          cmake -S linux -B build-${{ matrix.name }} -G Ninja -DCMAKE_BUILD_TYPE=Release -DPOMO_REQUIRE_TTS=ON -DCMAKE_CXX_COMPILER=g++
 
       - name: Build
         shell: bash
