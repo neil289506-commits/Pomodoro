@@ -14,6 +14,10 @@ Announcer::Announcer(QObject* p) : QObject(p), vol_(createPlatformVolume()) {
 Announcer::~Announcer() = default;
 void Announcer::say(const QString& text) {
     if (vol_) vol_->setPercent(kVolumePercent);
+#ifdef POMO_HAS_TTS
     if (tts_) tts_->say(text);
+#else
+    Q_UNUSED(text);  // 未安裝 Qt Speech 模組：只調整音量，不語音
+#endif
 }
 }
