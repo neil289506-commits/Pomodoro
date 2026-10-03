@@ -18,7 +18,7 @@
 
 ## 取得編譯產物
 
-每次推送到 `main`，CI 會編譯五個平台，並發佈一個 **GitHub Release**，到 repo 右側的 **Releases** 下載。
+每次推送到 `main`，CI 會編譯五個平台，並發佈一個標示為 **Pre-release** 的 GitHub Release，到 repo 右側的 **Releases** 下載。
 
 - **Tag**：`CP#<次數>`，例如 `CP#7`（第 7 次發佈）
 - **Release 名稱**：`CP#<日期時間>+<次數>`，例如 `CP#20261003-154530+7`（時間為 UTC+8）
@@ -31,8 +31,8 @@
 | `macos-universal` | macOS（Apple Silicon + Intel） | `pomodoro.app`，**需要本機已安裝 Qt 6.8.3**，尚未內含 Qt 執行庫、未簽署 |
 | `linux-amd64` | Linux x86_64 | 單一執行檔，**需要本機已安裝 Qt 6.8.3 的執行庫** |
 | `linux-arm64` | Linux aarch64 | 同上，ARM 版 |
-| `android` | Android | debug APK，同一個檔案支援 ARM 與 x86 |
-| （無） | iOS | 目前只做編譯，沒有簽署，不產生 `.ipa`，Release 裡沒有 iOS 的 zip |
+| `android` | Android | debug 金鑰簽署的 APK（非正式簽署），同一個檔案支援 ARM 與 x86 |
+| `ios-arm64` | iPhone / iPad（arm64） | **未簽署**的 `.ipa`，需自行簽署或用 AltStore / Sideloadly 等側載工具安裝 |
 
 五個平台全部編譯成功才會發佈；任何一個失敗就不會產生 Release。每個 zip 內都附有 `BUILD_INFO.txt`（commit、執行連結、時間）。
 
@@ -95,8 +95,8 @@ Qt 不在預設路徑時加上 `-DCMAKE_PREFIX_PATH=<Qt 6.8.3 路徑>`。語音�
 # Android（需要 Android SDK、JDK 17、Gradle 8.9）
 cd android && gradle assembleDebug
 
-# iOS（需要 macOS、JDK 11、Gradle 7.6；簽署與 .ipa 需 Apple 憑證）
-cd ios && gradle build
+# iOS（需要 macOS + Xcode、JDK 11、Gradle 7.6；產生未簽署的 .ipa）
+cd ios && gradle createIPA
 ```
 
 ## 授權

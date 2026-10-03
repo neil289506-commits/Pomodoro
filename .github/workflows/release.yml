@@ -1,7 +1,7 @@
 name: release
 
 # 推送到 main：編譯五個平台 → 各自打包成 zip → 發佈 GitHub Release
-#   Tag：CP#<次數>　　Release 名稱：CP#<日期時間>+<次數>
+#   Tag：CP#<次數>　　Release 名稱：CP#<日期時間>+<次數>　　標示為 Pre-release
 # 手動執行（workflow_dispatch）在非 main 分支時只會編譯打包，zip 放在 release-preview artifact，不發佈 Release。
 on:
   push:
@@ -89,10 +89,10 @@ jobs:
             echo "- Windows：解壓後執行 \`pomodoro.exe\`（x64 已含 Qt 執行庫；ARM64 需自備 Qt 6.8.3 ARM64 執行庫）"
             echo "- macOS：解壓後打開 \`pomodoro.app\`（需本機已安裝 Qt 6.8.3）"
             echo "- Linux：解壓後執行 \`pomodoro\`（需本機已安裝 Qt 6.8.3 執行庫）"
-            echo "- Android：解壓後安裝 APK（debug 簽署）"
-            echo "- iOS：目前只做編譯，沒有簽署，沒有 zip"
+            echo "- Android：解壓後安裝 APK（debug 金鑰簽署，非正式簽署；需允許安裝未知來源 App）"
+            echo "- iOS：解壓後得到未簽署的 \`.ipa\`，需自行簽署或用 AltStore / Sideloadly 等側載工具安裝（iPhone、iPad）"
           } > notes.md
-          if ! gh release create "$TAG" dist/*.zip --target "$GITHUB_SHA" --title "$NAME" --notes-file notes.md --latest 2> err.log; then
+          if ! gh release create "$TAG" dist/*.zip --target "$GITHUB_SHA" --title "$NAME" --notes-file notes.md --prerelease 2> err.log; then
             while IFS= read -r l; do echo "::error::${l:0:380}"; done < err.log
             exit 1
           fi

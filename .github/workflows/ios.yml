@@ -23,10 +23,23 @@ jobs:
         with: { distribution: temurin, java-version: 11 }
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: '7.6.4' }
-      # arm64、iPhone + iPad（UIDeviceFamily 1,2）。簽署與 .ipa 需 Apple 憑證，目前只做編譯
-      - name: Gradle build
+      # arm64、iPhone + iPad（UIDeviceFamily 1,2）。未簽署的 IPA：需自行簽署或用側載工具重新簽署
+      - name: 編譯並建立未簽署 IPA
         working-directory: ios
         shell: bash
         run: |
           set -o pipefail
-          gradle build --stacktrace 2>&1 | tee build.log || { grep -E -A4 "error:|What went wrong" build.log | head -30 | while IFS= read -r l; do echo "::error::${l:0:380}"; done; exit 1; }
+          gradle createIPA --stacktrace 2>&1 | tee build.log || { grep -E -A4 "error:|What went wrong|Caused by" build.log | head -30 | while IFS= read -r l; do echo "::error::${l:0:380}"; done; exit 1; }
+
+      - name: 打包 zip
+        shell: bash
+        run: |
+          IPA=$(find ios -name '*.ipa' -not -path '*/node_modules/*' | head -1)
+          [ -n "$IPA" ] || { echo "::error::找不到 .ipa"; find ios/build -maxdepth 3 | head -20 | while IFS= read -r l; do echo "::error::$l"; done; exit 1; }
+          mkdir -p stage && cp "$IPA" stage/
+          python3 .github/scripts/package.py "dist/TomatoGuard-ios-arm64-CP${{ inputs.release_number || 'dev' }}.zip" stage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zip-ios-arm64
+          path: dist/*.zip
