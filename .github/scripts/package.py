@@ -3,6 +3,10 @@
 用法：package.py <輸出.zip> <來源資料夾>"""
 import datetime, os, stat, sys, zipfile
 
+# Windows 主控台預設不是 UTF-8，輸出中文會 UnicodeEncodeError
+for s in (sys.stdout, sys.stderr):
+    s.reconfigure(encoding="utf-8", errors="replace")
+
 def build_info():
     env = os.environ.get
     return "\n".join([
