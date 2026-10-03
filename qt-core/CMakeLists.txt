@@ -11,8 +11,8 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT CMAKE_CXX_COMPILER_ID STREQUAL
 elseif(APPLE AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   message(FATAL_ERROR "macOS 請使用 Clang")
 endif()
-find_package(Qt6 6.11.2 REQUIRED COMPONENTS Widgets)
-find_package(Qt6 6.11.2 QUIET COMPONENTS TextToSpeech)
+find_package(Qt6 6.8.3 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 6.8.3 QUIET COMPONENTS TextToSpeech)
 # 標頭檔也要列入來源，AUTOMOC 才會處理放在 include/ 的 Q_OBJECT 類別
 file(GLOB POMO_HEADERS CONFIGURE_DEPENDS include/pomo/*.h)
 add_library(pomo_core STATIC ${POMO_HEADERS}

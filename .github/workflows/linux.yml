@@ -14,9 +14,9 @@ jobs:
           - name: linux-amd64
             os: ubuntu-22.04
             qt_host: linux
-            qt_arch: gcc_64
+            qt_arch: linux_gcc_64
           - name: linux-arm64
-            os: ubuntu-22.04-arm
+            os: ubuntu-24.04-arm   # Qt 6.8.3 arm64 預編譯套件需要 glibc 2.38+（22.04 只有 2.35）
             qt_host: linux_arm64
             qt_arch: linux_gcc_arm64
     runs-on: ${{ matrix.os }}
@@ -34,7 +34,7 @@ jobs:
 
       - uses: jurplel/install-qt-action@v4
         with:
-          version: "6.11.2"
+          version: "6.8.3"
           host: ${{ matrix.qt_host }}
           target: desktop
           arch: ${{ matrix.qt_arch }}
@@ -44,7 +44,10 @@ jobs:
         run: cmake -S linux -B build-${{ matrix.name }} -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++
 
       - name: Build
-        run: cmake --build build-${{ matrix.name }} --config Release
+        shell: bash
+        run: |
+          set -o pipefail
+          cmake --build build-${{ matrix.name }} --config Release 2>&1 | tee build.log || { grep -E "error|undefined|FAILED" build.log | head -15 | while IFS= read -r l; do echo "::error::${l:0:380}"; done; { echo "== moc 診斷"; "$QT_ROOT_DIR/libexec/moc" --version 2>&1 | head -3; ldd "$QT_ROOT_DIR/libexec/moc" 2>&1 | grep -iE "not found" | head -5; grep -iE -B6 "AutoMoc subprocess" build.log | head -14; } 2>&1 | while IFS= read -r l; do echo "::error::${l:0:380}"; done; exit 1; }
 
       - uses: actions/upload-artifact@v4
         with:

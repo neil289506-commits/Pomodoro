@@ -17,7 +17,7 @@ jobs:
             qt_target_dir: msvc2022_64
           - name: windows-arm64
             msvc_arch: amd64_arm64
-            qt_target_arch: win64_msvc2022_arm64
+            qt_target_arch: win64_msvc2022_arm64_cross_compiled
             qt_target_dir: msvc2022_arm64
     runs-on: windows-2022
     steps:
@@ -26,7 +26,7 @@ jobs:
       - name: Install Qt host (x64 tools)
         uses: jurplel/install-qt-action@v4
         with:
-          version: "6.11.2"
+          version: "6.8.3"
           host: windows
           target: desktop
           arch: win64_msvc2022_64
@@ -35,13 +35,13 @@ jobs:
           set-env: false
 
       - name: Install Qt ARM64 target
-        if: matrix.qt_target_arch == 'win64_msvc2022_arm64'
+        if: matrix.qt_target_arch == 'win64_msvc2022_arm64_cross_compiled'
         uses: jurplel/install-qt-action@v4
         with:
-          version: "6.11.2"
+          version: "6.8.3"
           host: windows
           target: desktop
-          arch: win64_msvc2022_arm64
+          arch: win64_msvc2022_arm64_cross_compiled
           dir: ${{ github.workspace }}\qt-target
           cache: true
           set-env: false
@@ -55,13 +55,13 @@ jobs:
         run: |
           set -euxo pipefail
           BUILD_DIR="build-${{ matrix.name }}"
-          HOST="${{ github.workspace }}/qt-host/Qt/6.11.2/msvc2022_64"
+          HOST="${{ github.workspace }}/qt-host/Qt/6.8.3/msvc2022_64"
           if [ "${{ matrix.qt_target_arch }}" = "win64_msvc2022_64" ]; then
             cmake -S windows -B "$BUILD_DIR" -G Ninja \
               -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_PREFIX_PATH="$HOST"
           else
-            TARGET="${{ github.workspace }}/qt-target/Qt/6.11.2/${{ matrix.qt_target_dir }}"
+            TARGET="${{ github.workspace }}/qt-target/Qt/6.8.3/${{ matrix.qt_target_dir }}"
             cmake -S windows -B "$BUILD_DIR" -G Ninja \
               -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_SYSTEM_NAME=Windows \
@@ -79,7 +79,7 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          HOST="${{ github.workspace }}/qt-host/Qt/6.11.2/msvc2022_64"
+          HOST="${{ github.workspace }}/qt-host/Qt/6.8.3/msvc2022_64"
           "$HOST/bin/windeployqt.exe" "build-${{ matrix.name }}/pomodoro.exe"
 
       - uses: actions/upload-artifact@v4

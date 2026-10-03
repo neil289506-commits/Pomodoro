@@ -11,6 +11,7 @@ class Announcer : public QObject {
     Q_OBJECT
 public:
     explicit Announcer(QObject* parent = nullptr);
+    ~Announcer() override;  // 定義在 .cpp：此處 QTextToSpeech 仍是不完整型別
     void say(const QString& text);
 private:
     std::unique_ptr<IVolume> vol_;
