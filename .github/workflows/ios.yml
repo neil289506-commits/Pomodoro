@@ -1,5 +1,19 @@
 name: ios
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches-ignore: [main]   # main 的 push 由 release.yml 統一呼叫本 workflow
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      release_number:
+        type: string
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: macos-14

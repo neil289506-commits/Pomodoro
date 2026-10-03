@@ -18,21 +18,25 @@
 
 ## 取得編譯產物
 
-每次推送或 Pull request，GitHub Actions 都會自動編譯。到 repo 的 **Actions** 頁籤，點進最新一次成功的執行，頁面最下方的 **Artifacts** 即可下載（預設保留 90 天）。
+每次推送到 `main`，CI 會編譯五個平台，並發佈一個 **GitHub Release**，到 repo 右側的 **Releases** 下載。
 
-| Artifact | 平台 | 內容 |
+- **Tag**：`CP#<次數>`，例如 `CP#7`（第 7 次發佈）
+- **Release 名稱**：`CP#<日期時間>+<次數>`，例如 `CP#20261003-154530+7`（時間為 UTC+8）
+- 每個平台各自一個 zip，檔名為 `TomatoGuard-<平台>-CP<次數>.zip`：
+
+| zip | 平台 | 內容 |
 |---|---|---|
-| `windows-x64` | Windows x64 | `pomodoro.exe` 加上 Qt 執行庫（已用 windeployqt 打包），解壓後可直接執行 |
-| `windows-arm64` | Windows ARM64 | 只有 `pomodoro.exe`，**尚未打包 Qt 執行庫**（windeployqt 目前只對 x64 執行），需自備 Qt 6.8.3 ARM64 執行庫 |
-| `macos-universal` | macOS（Apple Silicon + Intel） | 單一執行檔，**需要本機已安裝 Qt 6.8.3**，尚未打包成 `.app` |
+| `windows-x64` | Windows x64 | `pomodoro.exe`（GUI 程式，不會跳出主控台視窗）加上 Qt 執行庫，解壓後可直接執行 |
+| `windows-arm64` | Windows ARM64 | 只有 `pomodoro.exe`，**尚未打包 Qt 執行庫**，需自備 Qt 6.8.3 ARM64 執行庫 |
+| `macos-universal` | macOS（Apple Silicon + Intel） | `pomodoro.app`，**需要本機已安裝 Qt 6.8.3**，尚未內含 Qt 執行庫、未簽署 |
 | `linux-amd64` | Linux x86_64 | 單一執行檔，**需要本機已安裝 Qt 6.8.3 的執行庫** |
 | `linux-arm64` | Linux aarch64 | 同上，ARM 版 |
-| `Android_AMD64_and_Arm` | Android | debug APK，同一個檔案支援 ARM 與 x86 |
-| （無） | iOS | 目前只做編譯，沒有簽署，不產生 `.ipa` |
+| `android` | Android | debug APK，同一個檔案支援 ARM 與 x86 |
+| （無） | iOS | 目前只做編譯，沒有簽署，不產生 `.ipa`，Release 裡沒有 iOS 的 zip |
 
-### 保存在 repo 的 `compile/`
+五個平台全部編譯成功才會發佈；任何一個失敗就不會產生 Release。每個 zip 內都附有 `BUILD_INFO.txt`（commit、執行連結、時間）。
 
-推送到 `main` 時，CI 會把各平台的最新編譯產物提交到 repo 的 `compile/<平台>/`，並附上 `BUILD_INFO.txt`（commit、執行連結、時間）。不需要登入 Actions 就能直接下載；舊版本可從 git 歷史找回。因為是 CI 自己推送到 `main`，本機 `git pull` 時會看到 `chore: 更新編譯產物` 的 commit。
+非 `main` 的分支和 Pull request 只會編譯，不會發佈；想預覽打包結果，可在 Actions 手動執行 `release` workflow，zip 會放在 `release-preview` artifact。
 
 ## 目前狀態
 
