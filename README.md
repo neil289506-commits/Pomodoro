@@ -28,17 +28,27 @@
 
 | zip | 平台 | 內容 |
 |---|---|---|
-| `windows-x64` | Windows x64 | `pomodoro.exe`（GUI 程式，不會跳出主控台視窗）加上 Qt 執行庫，解壓後可直接執行 |
-| `windows-arm64` | Windows ARM64 | 只有 `pomodoro.exe`，**尚未打包 Qt 執行庫**，需自備 Qt 6.8.3 ARM64 執行庫 |
-| `macos-universal` | macOS（Apple Silicon + Intel） | `pomodoro.app`，**需要本機已安裝 Qt 6.8.3**，尚未內含 Qt 執行庫、未簽署 |
-| `linux-amd64` | Linux x86_64 | 單一執行檔，**需要本機已安裝 Qt 6.8.3 的執行庫** |
-| `linux-arm64` | Linux aarch64 | 同上，ARM 版 |
+| `windows-x64` | Windows x64 | `pomodoro.exe`（GUI 程式，不會跳出主控台視窗）加上 Qt 執行庫，**解壓後直接執行，不需安裝任何東西** |
+| `windows-arm64` | Windows ARM64 | 同上，ARM64 原生版，已內含 Qt 執行庫與 VC 執行階段 |
+| `macos-universal` | macOS（Apple Silicon + Intel） | `pomodoro.app`，**已內含 Qt**，使用者不需安裝；ad-hoc 簽署，沒有 Apple 開發者簽署與公證，第一次要右鍵 → 打開 |
+| `linux-amd64` | Linux x86_64 | `.AppImage`，**已內含 Qt**，`chmod +x` 後直接執行 |
+| `linux-arm64` | Linux aarch64 | 同上，ARM 版（在 Ubuntu 24.04 上編譯，需要 glibc 2.39 以上的系統，例如 Ubuntu 24.04、Debian 13、Fedora 40 以上） |
 | `android` | Android | debug 金鑰簽署的 APK（非正式簽署），同一個檔案支援 ARM 與 x86 |
 | `ios-arm64` | iPhone / iPad（arm64） | **未簽署**的 `.ipa`，需自行簽署或用 AltStore / Sideloadly 等側載工具安裝 |
 
 五個平台全部編譯成功才會發佈；任何一個失敗就不會產生 Release。每個 zip 內都附有 `BUILD_INFO.txt`（commit、執行連結、時間）。
 
 非 `main` 的分支和 Pull request 只會編譯，不會發佈；想預覽打包結果，可在 Actions 手動執行 `release` workflow，zip 會放在 `release-preview` artifact。
+
+### 桌面版第一次執行
+
+| 系統 | 步驟 |
+|---|---|
+| Windows | 解壓 zip，執行 `pomodoro.exe`。若出現 SmartScreen 警告：**其他資訊 → 仍要執行**（因為沒有買程式碼簽署憑證）。 |
+| macOS | 解壓後把 `pomodoro.app` 拖到「應用程式」。第一次**按右鍵 → 打開**；若仍被擋，在終端機執行 `xattr -cr /Applications/pomodoro.app`。 |
+| Linux | 解壓後 `chmod +x TomatoGuard-*.AppImage` 再執行。出現 FUSE 錯誤時，安裝 `libfuse2`，或執行 `./TomatoGuard-*.AppImage --appimage-extract-and-run`。語音提醒需要系統已安裝 `speech-dispatcher`。 |
+
+使用者**不需要安裝 Qt 或任何 SDK**。
 
 ## 硬鎖與放行 App（桌面版）
 
@@ -118,7 +128,7 @@ cmake -S windows -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPIL
 cmake --build build
 ```
 
-Qt 不在預設路徑時加上 `-DCMAKE_PREFIX_PATH=<Qt 6.8.3 路徑>`。語音提醒需另外安裝 Qt 的 Qt Speech 模組。
+Qt 不在預設路徑時加上 `-DCMAKE_PREFIX_PATH=<Qt 6.8.3 路徑>`。語音提醒需另外安裝 Qt 的 Qt Speech 與 Qt Multimedia 模組。以上是開發者自行編譯才需要，一般使用者請下載 Release。
 
 ```bash
 # Android（需要 Android SDK、JDK 17、Gradle 8.9）

@@ -66,10 +66,24 @@ jobs:
           set -o pipefail
           cmake --build build-${{ matrix.name }} --config Release 2>&1 | tee build.log || { grep -E "error|undefined|FAILED" build.log | head -15 | while IFS= read -r l; do echo "::error::${l:0:380}"; done; { echo "== moc 診斷"; "$QT_ROOT_DIR/libexec/moc" --version 2>&1 | head -3; ldd "$QT_ROOT_DIR/libexec/moc" 2>&1 | grep -iE "not found" | head -5; grep -iE -B6 "AutoMoc subprocess" build.log | head -14; } 2>&1 | while IFS= read -r l; do echo "::error::${l:0:380}"; done; exit 1; }
 
+      - name: 打包 AppImage（內含 Qt，使用者不需安裝）
+        shell: bash
+        run: bash .github/scripts/build-appimage.sh "build-${{ matrix.name }}" "${{ matrix.name == 'linux-amd64' && 'x86_64' || 'aarch64' }}" dist-appimage
+
+      - name: 啟動測試（無螢幕）
+        continue-on-error: true   # 只提供資訊，不擋發佈
+        shell: bash
+        run: |
+          chmod +x dist-appimage/*.AppImage
+          code=0
+          APPIMAGE_EXTRACT_AND_RUN=1 QT_QPA_PLATFORM=offscreen timeout 6 dist-appimage/*.AppImage || code=$?
+          echo "結束碼：$code（124 代表程式正常執行到逾時被終止）"
+          [ "$code" -eq 124 ]
+
       - name: 打包 zip
         shell: bash
         run: |
-          mkdir -p stage && cp build-${{ matrix.name }}/pomodoro stage/
+          mkdir -p stage && cp dist-appimage/*.AppImage stage/
           python3 .github/scripts/package.py "dist/TomatoGuard-${{ matrix.name }}-CP${{ inputs.release_number || 'dev' }}.zip" stage
 
       - uses: actions/upload-artifact@v4

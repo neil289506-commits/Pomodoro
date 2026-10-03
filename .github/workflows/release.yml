@@ -86,9 +86,9 @@ jobs:
           {
             echo "第 ${N} 次發佈（commit ${GITHUB_SHA:0:7}）。每個平台各自一個 zip，檔名結尾為 CP${N}。"
             echo
-            echo "- Windows：解壓後執行 \`pomodoro.exe\`（x64 已含 Qt 執行庫；ARM64 需自備 Qt 6.8.3 ARM64 執行庫）"
-            echo "- macOS：解壓後打開 \`pomodoro.app\`（需本機已安裝 Qt 6.8.3）"
-            echo "- Linux：解壓後執行 \`pomodoro\`（需本機已安裝 Qt 6.8.3 執行庫）"
+            echo "- Windows：解壓後執行 \`pomodoro.exe\`（x64 與 ARM64 都已內含 Qt 執行庫，不需安裝任何開發工具）。第一次執行若出現 SmartScreen 警告，選「其他資訊 → 仍要執行」"
+            echo "- macOS：解壓後把 \`pomodoro.app\` 拖到「應用程式」，已內含 Qt。因為沒有 Apple 開發者簽署與公證，第一次請按右鍵 → 打開，或在終端機執行 \`xattr -cr pomodoro.app\`"
+            echo "- Linux：解壓後得到 \`.AppImage\`，執行 \`chmod +x\` 後直接執行，已內含 Qt。若出現 FUSE 錯誤，安裝 libfuse2 或加上 \`--appimage-extract-and-run\`；語音提醒需要系統已安裝 speech-dispatcher"
             echo "- Android：解壓後安裝 APK（debug 金鑰簽署，非正式簽署；需允許安裝未知來源 App）"
             echo "- iOS：解壓後得到未簽署的 \`.ipa\`，需自行簽署或用 AltStore / Sideloadly 等側載工具安裝（iPhone、iPad）"
           } > notes.md
