@@ -41,6 +41,7 @@ jobs:
           target: desktop
           arch: win64_msvc2022_64
           dir: ${{ github.workspace }}\qt-host
+          modules: qtspeech qtmultimedia
           cache: true
           set-env: false
 
@@ -53,6 +54,7 @@ jobs:
           target: desktop
           arch: win64_msvc2022_arm64_cross_compiled
           dir: ${{ github.workspace }}\qt-target
+          modules: qtspeech qtmultimedia
           cache: true
           set-env: false
 
@@ -64,16 +66,21 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
+          # 失敗時把 CMake 的錯誤訊息輸出成註解（完整記錄需要登入才能看）
+          exec > >(tee configure.log) 2>&1
+          trap 'sleep 1; grep -E -B1 -A7 "CMake Error" configure.log | head -40 | while IFS= read -r l; do echo "::error::${l:0:380}"; done' ERR
           BUILD_DIR="build-${{ matrix.name }}"
           HOST="${{ github.workspace }}/qt-host/Qt/6.8.3/msvc2022_64"
           if [ "${{ matrix.qt_target_arch }}" = "win64_msvc2022_64" ]; then
             cmake -S windows -B "$BUILD_DIR" -G Ninja \
               -DCMAKE_BUILD_TYPE=Release \
+              -DPOMO_REQUIRE_TTS=ON \
               -DCMAKE_PREFIX_PATH="$HOST"
           else
             TARGET="${{ github.workspace }}/qt-target/Qt/6.8.3/${{ matrix.qt_target_dir }}"
             cmake -S windows -B "$BUILD_DIR" -G Ninja \
               -DCMAKE_BUILD_TYPE=Release \
+              -DPOMO_REQUIRE_TTS=ON \
               -DCMAKE_SYSTEM_NAME=Windows \
               -DCMAKE_SYSTEM_PROCESSOR=ARM64 \
               -DCMAKE_PREFIX_PATH="$TARGET" \

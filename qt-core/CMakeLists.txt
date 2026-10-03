@@ -12,12 +12,18 @@ elseif(APPLE AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   message(FATAL_ERROR "macOS 請使用 Clang")
 endif()
 find_package(Qt6 6.8.3 REQUIRED COMPONENTS Widgets)
-find_package(Qt6 6.8.3 QUIET COMPONENTS TextToSpeech)
+# CI 會設定 POMO_REQUIRE_TTS=ON：缺少 Qt Speech 模組就直接失敗，避免悄悄編出沒有語音的版本
+option(POMO_REQUIRE_TTS "Qt Speech 模組為必要" OFF)
+if(POMO_REQUIRE_TTS)
+  find_package(Qt6 6.8.3 REQUIRED COMPONENTS TextToSpeech)
+else()
+  find_package(Qt6 6.8.3 QUIET COMPONENTS TextToSpeech)
+endif()
 # 標頭檔也要列入來源，AUTOMOC 才會處理放在 include/ 的 Q_OBJECT 類別
 file(GLOB POMO_HEADERS CONFIGURE_DEPENDS include/pomo/*.h)
 add_library(pomo_core STATIC ${POMO_HEADERS}
   src/AppInfo.cpp src/Settings.cpp src/Session.cpp src/Guardian.cpp src/History.cpp src/Stats.cpp
-  src/Announcer.cpp src/Theme.cpp src/TimerRing.cpp src/StatsPage.cpp src/SettingsPage.cpp src/MainWindow.cpp)
+  src/Announcer.cpp src/Theme.cpp src/TimerRing.cpp src/StatsPage.cpp src/SettingsPage.cpp src/MainWindow.cpp src/AppEntry.cpp src/LauncherDialog.cpp)
 target_include_directories(pomo_core PUBLIC include)
 target_link_libraries(pomo_core PUBLIC Qt6::Widgets)
 if(TARGET Qt6::TextToSpeech)
