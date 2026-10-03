@@ -8,6 +8,11 @@ sourceCompatibility = 11
 targetCompatibility = 11
 repositories { mavenCentral() }
 ext { mainClassName = 'org.pomo.IOSLauncher' }
+
+// 不簽署：沒有 Apple 憑證也能產生 .ipa（簽署設定屬於 Gradle 外掛，不是 robovm.xml）
+robovm {
+    iosSkipSigning = true
+}
 dependencies {
     implementation 'com.mobidevelop.robovm:robovm-rt:2.3.22'
     implementation 'com.mobidevelop.robovm:robovm-cocoatouch:2.3.22'
