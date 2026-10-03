@@ -2,7 +2,7 @@
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QTimer>
-#import <AppKit/NSWorkspace.h>
+#import <AppKit/AppKit.h>  // NSWorkspace / NSRunningApplication（含 executableURL）
 namespace pomo {
 class MacForegroundWatcher final : public IForegroundWatcher {
 public:

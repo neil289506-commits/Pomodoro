@@ -47,7 +47,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          cmake --build build-${{ matrix.name }} --config Release 2>&1 | tee build.log || { grep -E "error|undefined|FAILED" build.log | head -15 | while IFS= read -r l; do echo "::error::${l:0:380}"; done; exit 1; }
+          cmake --build build-${{ matrix.name }} --config Release 2>&1 | tee build.log || { grep -E "error|undefined|FAILED" build.log | head -15 | while IFS= read -r l; do echo "::error::${l:0:380}"; done; { echo "== moc 診斷"; "$QT_ROOT_DIR/libexec/moc" --version 2>&1 | head -3; ldd "$QT_ROOT_DIR/libexec/moc" 2>&1 | grep -iE "not found" | head -5; grep -iE -B6 "AutoMoc subprocess" build.log | head -14; } 2>&1 | while IFS= read -r l; do echo "::error::${l:0:380}"; done; exit 1; }
 
       - uses: actions/upload-artifact@v4
         with:
