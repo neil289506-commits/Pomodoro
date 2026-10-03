@@ -17,7 +17,7 @@ jobs:
             qt_target_dir: msvc2022_64
           - name: windows-arm64
             msvc_arch: amd64_arm64
-            qt_target_arch: win64_msvc2022_arm64
+            qt_target_arch: win64_msvc2022_arm64_cross_compiled
             qt_target_dir: msvc2022_arm64
     runs-on: windows-2022
     steps:
@@ -35,13 +35,13 @@ jobs:
           set-env: false
 
       - name: Install Qt ARM64 target
-        if: matrix.qt_target_arch == 'win64_msvc2022_arm64'
+        if: matrix.qt_target_arch == 'win64_msvc2022_arm64_cross_compiled'
         uses: jurplel/install-qt-action@v4
         with:
           version: "6.8.3"
           host: windows
           target: desktop
-          arch: win64_msvc2022_arm64
+          arch: win64_msvc2022_arm64_cross_compiled
           dir: ${{ github.workspace }}\qt-target
           cache: true
           set-env: false
