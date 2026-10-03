@@ -8,7 +8,7 @@ class Guardian : public QObject {
     Q_OBJECT
 public:
     explicit Guardian(QObject* parent = nullptr) : QObject(parent) {}
-    void setAllowedApps(const QSet<QString>& ids) { allowed_ = ids; }
+    void setAllowedApps(const QSet<QString>& ids);
     void setActive(bool on) { active_ = on; leaves_ = 0; away_ = false; }
     int leaves() const { return leaves_; }
 public slots:
