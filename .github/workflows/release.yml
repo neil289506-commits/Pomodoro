@@ -78,6 +78,7 @@ jobs:
         if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}   # 這個 job 沒有 checkout，gh 需要明確知道 repo
         run: |
           N='${{ needs.prepare.outputs.number }}'
           TAG="CP#${N}"
@@ -91,7 +92,10 @@ jobs:
             echo "- Android：解壓後安裝 APK（debug 簽署）"
             echo "- iOS：目前只做編譯，沒有簽署，沒有 zip"
           } > notes.md
-          gh release create "$TAG" dist/*.zip --target "$GITHUB_SHA" --title "$NAME" --notes-file notes.md --latest
+          if ! gh release create "$TAG" dist/*.zip --target "$GITHUB_SHA" --title "$NAME" --notes-file notes.md --latest 2> err.log; then
+            while IFS= read -r l; do echo "::error::${l:0:380}"; done < err.log
+            exit 1
+          fi
 
       - name: 預覽（非 main，不發佈）
         if: github.ref != 'refs/heads/main'
