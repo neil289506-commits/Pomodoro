@@ -4,7 +4,7 @@
 set -euo pipefail
 # 失敗時把最後的輸出變成註解（完整記錄需要登入才能看）
 exec > >(tee appimage.log) 2>&1
-trap 'sleep 1; { echo "== 最後輸出"; tail -n 25 appimage.log; echo "== 目前目錄"; ls | head -20; } | while IFS= read -r l; do echo "::error::${l:0:300}"; done' ERR
+trap 'sleep 1; msg=$(tail -n 14 appimage.log | cut -c1-200); msg="${msg//$'"'"'\n'"'"'/%0A}"; echo "::error::AppImage 失敗，最後輸出：%0A${msg}"' ERR
 BUILD_DIR="$1"; ARCH="$2"; OUT="${3:-dist-appimage}"
 : "${QT_ROOT_DIR:?需要 QT_ROOT_DIR（由 install-qt-action 設定）}"
 
