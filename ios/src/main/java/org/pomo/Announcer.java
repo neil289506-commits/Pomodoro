@@ -7,6 +7,6 @@ public class Announcer {
     public void say(String text) {
         AVSpeechUtterance u = new AVSpeechUtterance(text);
         u.setVolume(0.5f);
-        synth.speak(u);
+        synth.enqueueSpeakUtterance(u);
     }
 }

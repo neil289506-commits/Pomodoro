@@ -16,7 +16,7 @@ jobs:
             qt_host: linux
             qt_arch: linux_gcc_64
           - name: linux-arm64
-            os: ubuntu-22.04-arm
+            os: ubuntu-24.04-arm   # Qt 6.8.3 arm64 預編譯套件需要 glibc 2.38+（22.04 只有 2.35）
             qt_host: linux_arm64
             qt_arch: linux_gcc_arm64
     runs-on: ${{ matrix.os }}
