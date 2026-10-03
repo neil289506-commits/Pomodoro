@@ -23,7 +23,10 @@ jobs:
         run: cmake -S macos -B build-macos -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++
 
       - name: Build
-        run: cmake --build build-macos --config Release
+        shell: bash
+        run: |
+          set -o pipefail
+          cmake --build build-macos --config Release 2>&1 | tee build.log || { grep -E "error|undefined|FAILED|ld:" build.log | head -15 | while IFS= read -r l; do echo "::error::${l:0:380}"; done; exit 1; }
 
       - name: Check binary architecture
         run: lipo -info build-macos/pomodoro
