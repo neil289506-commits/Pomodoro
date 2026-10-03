@@ -48,10 +48,11 @@ jobs:
           host: ${{ matrix.qt_host }}
           target: desktop
           arch: ${{ matrix.qt_arch }}
+          modules: qtspeech
           cache: true
 
       - name: Configure
-        run: cmake -S linux -B build-${{ matrix.name }} -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++
+        run: cmake -S linux -B build-${{ matrix.name }} -G Ninja -DCMAKE_BUILD_TYPE=Release -DPOMO_REQUIRE_TTS=ON -DCMAKE_CXX_COMPILER=g++
 
       - name: Build
         shell: bash

@@ -41,6 +41,7 @@ jobs:
           target: desktop
           arch: win64_msvc2022_64
           dir: ${{ github.workspace }}\qt-host
+          modules: qtspeech
           cache: true
           set-env: false
 
@@ -53,6 +54,7 @@ jobs:
           target: desktop
           arch: win64_msvc2022_arm64_cross_compiled
           dir: ${{ github.workspace }}\qt-target
+          modules: qtspeech
           cache: true
           set-env: false
 
@@ -69,11 +71,13 @@ jobs:
           if [ "${{ matrix.qt_target_arch }}" = "win64_msvc2022_64" ]; then
             cmake -S windows -B "$BUILD_DIR" -G Ninja \
               -DCMAKE_BUILD_TYPE=Release \
+              -DPOMO_REQUIRE_TTS=ON \
               -DCMAKE_PREFIX_PATH="$HOST"
           else
             TARGET="${{ github.workspace }}/qt-target/Qt/6.8.3/${{ matrix.qt_target_dir }}"
             cmake -S windows -B "$BUILD_DIR" -G Ninja \
               -DCMAKE_BUILD_TYPE=Release \
+              -DPOMO_REQUIRE_TTS=ON \
               -DCMAKE_SYSTEM_NAME=Windows \
               -DCMAKE_SYSTEM_PROCESSOR=ARM64 \
               -DCMAKE_PREFIX_PATH="$TARGET" \

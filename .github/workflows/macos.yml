@@ -27,10 +27,11 @@ jobs:
           host: mac
           target: desktop
           arch: clang_64
+          modules: qtspeech
           cache: true
 
       - name: Configure
-        run: cmake -S macos -B build-macos -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++
+        run: cmake -S macos -B build-macos -G Ninja -DCMAKE_BUILD_TYPE=Release -DPOMO_REQUIRE_TTS=ON -DCMAKE_CXX_COMPILER=clang++
 
       - name: Build
         shell: bash
