@@ -23,12 +23,16 @@
 | Artifact | 平台 | 內容 |
 |---|---|---|
 | `windows-x64` | Windows x64 | `pomodoro.exe` 加上 Qt 執行庫（已用 windeployqt 打包），解壓後可直接執行 |
-| `windows-arm64` | Windows ARM64 | 同上，ARM 版 |
+| `windows-arm64` | Windows ARM64 | 只有 `pomodoro.exe`，**尚未打包 Qt 執行庫**（windeployqt 目前只對 x64 執行），需自備 Qt 6.8.3 ARM64 執行庫 |
 | `macos-universal` | macOS（Apple Silicon + Intel） | 單一執行檔，**需要本機已安裝 Qt 6.8.3**，尚未打包成 `.app` |
 | `linux-amd64` | Linux x86_64 | 單一執行檔，**需要本機已安裝 Qt 6.8.3 的執行庫** |
 | `linux-arm64` | Linux aarch64 | 同上，ARM 版 |
 | `Android_AMD64_and_Arm` | Android | debug APK，同一個檔案支援 ARM 與 x86 |
 | （無） | iOS | 目前只做編譯，沒有簽署，不產生 `.ipa` |
+
+### 保存在 repo 的 `compile/`
+
+推送到 `main` 時，CI 會把各平台的最新編譯產物提交到 repo 的 `compile/<平台>/`，並附上 `BUILD_INFO.txt`（commit、執行連結、時間）。不需要登入 Actions 就能直接下載；舊版本可從 git 歷史找回。因為是 CI 自己推送到 `main`，本機 `git pull` 時會看到 `chore: 更新編譯產物` 的 commit。
 
 ## 目前狀態
 
