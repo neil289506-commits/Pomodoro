@@ -2,6 +2,9 @@
 # 用 linuxdeploy 把 Qt 與相依函式庫一起打包成 AppImage，使用者不需要安裝 Qt。
 # 用法：build-appimage.sh <build 目錄> <x86_64|aarch64> [輸出資料夾]
 set -euo pipefail
+# 失敗時把最後的輸出變成註解（完整記錄需要登入才能看）
+exec > >(tee appimage.log) 2>&1
+trap 'sleep 1; { echo "== 最後輸出"; tail -n 25 appimage.log; echo "== 目前目錄"; ls | head -20; } | while IFS= read -r l; do echo "::error::${l:0:300}"; done' ERR
 BUILD_DIR="$1"; ARCH="$2"; OUT="${3:-dist-appimage}"
 : "${QT_ROOT_DIR:?需要 QT_ROOT_DIR（由 install-qt-action 設定）}"
 
