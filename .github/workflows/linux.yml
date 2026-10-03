@@ -5,6 +5,8 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: write   # 讓 CI 能把產物提交到 compile/
 jobs:
   build:
     strategy:
@@ -53,3 +55,8 @@ jobs:
         with:
           name: ${{ matrix.name }}
           path: build-${{ matrix.name }}/pomodoro
+
+      - name: 保存編譯產物到 compile/（僅 main 的 push）
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: bash .github/scripts/save-compile.sh "${{ matrix.name }}" build-${{ matrix.name }}/pomodoro
