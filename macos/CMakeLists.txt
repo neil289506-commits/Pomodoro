@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.21)
+set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "macOS 通用版：Apple Silicon + Intel")
+project(pomodoro_macos LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 20)
+add_subdirectory(../qt-core qt-core)
+add_executable(pomodoro src/main.cpp src/PlatformVolume.cpp)
+target_link_libraries(pomodoro PRIVATE pomo_core)

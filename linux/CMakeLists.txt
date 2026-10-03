@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.21)
+project(pomodoro_linux LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 20)
+add_subdirectory(../qt-core qt-core)
+add_executable(pomodoro src/main.cpp src/PlatformVolume.cpp)
+target_link_libraries(pomodoro PRIVATE pomo_core)

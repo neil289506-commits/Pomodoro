@@ -1,0 +1,14 @@
+buildscript {
+    repositories { mavenCentral(); gradlePluginPortal() }
+    dependencies { classpath 'com.mobidevelop.robovm:robovm-gradle-plugin:2.3.22' }
+}
+apply plugin: 'java'
+apply plugin: 'robovm'
+sourceCompatibility = 11
+targetCompatibility = 11
+repositories { mavenCentral() }
+ext { mainClassName = 'org.pomo.IOSLauncher' }
+dependencies {
+    implementation 'com.mobidevelop.robovm:robovm-rt:2.3.22'
+    implementation 'com.mobidevelop.robovm:robovm-cocoatouch:2.3.22'
+}

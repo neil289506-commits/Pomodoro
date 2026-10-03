@@ -1,0 +1,14 @@
+name: macos
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  build:
+    runs-on: macos-14   # Apple Silicon runner，以 Clang 編出 arm64 + x86_64 通用版
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jurplel/install-qt-action@v4
+        with: { version: '6.11.2', host: mac, target: desktop, arch: clang_64, modules: qtspeech, cache: true }
+      - run: cmake -S macos -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++
+      - run: cmake --build build
+      - run: lipo -info build/pomodoro
+      - uses: actions/upload-artifact@v4
+        with: { name: Mac_ARM_and_Intel_Universal, path: build/pomodoro }

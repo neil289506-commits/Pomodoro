@@ -1,0 +1,24 @@
+cmake_minimum_required(VERSION 3.21)
+project(pomo_core LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_AUTOMOC ON)
+# 編譯器：Windows = MSVC 2022、Linux = g++、macOS = Clang
+if(WIN32 AND (NOT MSVC OR MSVC_VERSION LESS 1930))
+  message(FATAL_ERROR "Windows 請使用 MSVC 2022")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  message(FATAL_ERROR "Linux 請使用 g++")
+elseif(APPLE AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  message(FATAL_ERROR "macOS 請使用 Clang")
+endif()
+find_package(Qt6 6.11.2 REQUIRED COMPONENTS Widgets TextToSpeech)
+# 標頭檔也要列入來源，AUTOMOC 才會處理放在 include/ 的 Q_OBJECT 類別
+file(GLOB POMO_HEADERS CONFIGURE_DEPENDS include/pomo/*.h)
+add_library(pomo_core STATIC ${POMO_HEADERS}
+  src/AppInfo.cpp src/Settings.cpp src/Session.cpp src/Guardian.cpp src/History.cpp src/Stats.cpp
+  src/Announcer.cpp src/Theme.cpp src/TimerRing.cpp src/StatsPage.cpp src/SettingsPage.cpp src/MainWindow.cpp)
+target_include_directories(pomo_core PUBLIC include)
+target_link_libraries(pomo_core PUBLIC Qt6::Widgets Qt6::TextToSpeech)
+if(MSVC)
+  target_compile_options(pomo_core PUBLIC /utf-8 /permissive-)
+endif()

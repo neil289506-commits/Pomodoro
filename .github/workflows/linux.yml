@@ -1,0 +1,22 @@
+name: linux
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: Linux_AMD64, os: ubuntu-22.04,     host: linux,       arch: linux_gcc_64 }
+          - { name: Linux_Arm,   os: ubuntu-22.04-arm, host: linux_arm64, arch: linux_gcc_arm64 }
+    runs-on: ${{ matrix.os }}   # 皆以 g++ 原生編譯
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y g++ ninja-build libgl1-mesa-dev libxkbcommon-dev libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 libpulse-dev
+      - uses: jurplel/install-qt-action@v4
+        with: { version: '6.11.2', host: "${{ matrix.host }}", target: desktop, arch: "${{ matrix.arch }}", modules: qtspeech, cache: true }
+      - run: cmake -S linux -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++
+      - run: cmake --build build
+      - uses: actions/upload-artifact@v4
+        with: { name: "${{ matrix.name }}", path: build/pomodoro }
