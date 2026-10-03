@@ -1,7 +1,19 @@
 name: android
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches-ignore: [main]   # main 的 push 由 release.yml 統一呼叫本 workflow
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      release_number:
+        type: string
+        required: false
+        default: ''
+
 permissions:
-  contents: write   # 讓 CI 能把產物提交到 compile/
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -14,10 +26,13 @@ jobs:
       - run: gradle assembleDebug
         working-directory: android
       # 純 Kotlin，沒有原生程式碼：同一個 APK 同時支援 ARM（arm64-v8a / armeabi-v7a）與 AMD64（x86_64 / x86）
-      - uses: actions/upload-artifact@v4
-        with: { name: Android_AMD64_and_Arm, path: android/app/build/outputs/apk/debug/*.apk }
-
-      - name: 保存編譯產物到 compile/（僅 main 的 push）
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: 打包 zip
         shell: bash
-        run: bash .github/scripts/save-compile.sh "android" android/app/build/outputs/apk/debug/*.apk
+        run: |
+          mkdir -p stage && cp android/app/build/outputs/apk/debug/*.apk stage/
+          python3 .github/scripts/package.py "dist/TomatoGuard-android-CP${{ inputs.release_number || 'dev' }}.zip" stage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zip-android
+          path: dist/*.zip

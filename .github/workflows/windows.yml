@@ -2,11 +2,19 @@ name: windows
 
 on:
   push:
+    branches-ignore: [main]   # main 的 push 由 release.yml 統一呼叫本 workflow
   pull_request:
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      release_number:
+        type: string
+        required: false
+        default: ''
 
 permissions:
-  contents: write   # 讓 CI 能把產物提交到 compile/
+  contents: read
+
 jobs:
   build:
     strategy:
@@ -84,24 +92,18 @@ jobs:
           HOST="${{ github.workspace }}/qt-host/Qt/6.8.3/msvc2022_64"
           "$HOST/bin/windeployqt.exe" "build-${{ matrix.name }}/pomodoro.exe"
 
+      - name: 打包 zip
+        shell: bash
+        run: |
+          B="build-${{ matrix.name }}"
+          mkdir -p stage && cp "$B/pomodoro.exe" stage/
+          cp "$B"/*.dll stage/ 2>/dev/null || true
+          for d in plugins platforms styles imageformats iconengines generic networkinformation tls texttospeech multimedia; do
+            [ -d "$B/$d" ] && cp -R "$B/$d" stage/ || true
+          done
+          python .github/scripts/package.py "dist/TomatoGuard-${{ matrix.name }}-CP${{ inputs.release_number || 'dev' }}.zip" stage
+
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.name }}
-          path: |
-            build-${{ matrix.name }}/pomodoro.exe
-            build-${{ matrix.name }}/*.dll
-            build-${{ matrix.name }}/plugins/**
-            build-${{ matrix.name }}/platforms/**
-            build-${{ matrix.name }}/styles/**
-            build-${{ matrix.name }}/imageformats/**
-            build-${{ matrix.name }}/iconengines/**
-            build-${{ matrix.name }}/generic/**
-            build-${{ matrix.name }}/networkinformation/**
-            build-${{ matrix.name }}/tls/**
-            build-${{ matrix.name }}/texttospeech/**
-            build-${{ matrix.name }}/multimedia/**
-
-      - name: 保存編譯產物到 compile/（僅 main 的 push）
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        shell: bash
-        run: bash .github/scripts/save-compile.sh "${{ matrix.name }}" build-${{ matrix.name }}/pomodoro.exe build-${{ matrix.name }}/*.dll build-${{ matrix.name }}/plugins build-${{ matrix.name }}/platforms build-${{ matrix.name }}/styles build-${{ matrix.name }}/imageformats build-${{ matrix.name }}/iconengines build-${{ matrix.name }}/generic build-${{ matrix.name }}/networkinformation build-${{ matrix.name }}/tls build-${{ matrix.name }}/texttospeech build-${{ matrix.name }}/multimedia
+          name: zip-${{ matrix.name }}
+          path: dist/*.zip

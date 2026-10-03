@@ -1,0 +1,101 @@
+name: release
+
+# 推送到 main：編譯五個平台 → 各自打包成 zip → 發佈 GitHub Release
+#   Tag：CP#<次數>　　Release 名稱：CP#<日期時間>+<次數>
+# 手動執行（workflow_dispatch）在非 main 分支時只會編譯打包，zip 放在 release-preview artifact，不發佈 Release。
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      number: ${{ steps.n.outputs.number }}
+    steps:
+      - id: n
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # 次數 = 已存在的 CP#<數字> tag 中最大的數字 + 1
+          LAST=$(gh api "repos/$GITHUB_REPOSITORY/tags" --paginate --jq '.[].name' | sed -n 's/^CP#\([0-9][0-9]*\)$/\1/p' | sort -n | tail -1)
+          echo "number=$(( ${LAST:-0} + 1 ))" >> "$GITHUB_OUTPUT"
+
+  android:
+    needs: prepare
+    uses: ./.github/workflows/android.yml
+    with:
+      release_number: ${{ needs.prepare.outputs.number }}
+
+  ios:
+    needs: prepare
+    uses: ./.github/workflows/ios.yml
+    with:
+      release_number: ${{ needs.prepare.outputs.number }}
+
+  linux:
+    needs: prepare
+    uses: ./.github/workflows/linux.yml
+    with:
+      release_number: ${{ needs.prepare.outputs.number }}
+
+  macos:
+    needs: prepare
+    uses: ./.github/workflows/macos.yml
+    with:
+      release_number: ${{ needs.prepare.outputs.number }}
+
+  windows:
+    needs: prepare
+    uses: ./.github/workflows/windows.yml
+    with:
+      release_number: ${{ needs.prepare.outputs.number }}
+
+  publish:
+    needs: [prepare, android, ios, linux, macos, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # 建立 tag 與 Release
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: zip-*
+          path: dist
+          merge-multiple: true
+
+      - name: 列出要發佈的 zip
+        run: ls -la dist
+
+      - name: 發佈 Release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          N='${{ needs.prepare.outputs.number }}'
+          TAG="CP#${N}"
+          NAME="CP#$(TZ=Asia/Taipei date +%Y%m%d-%H%M%S)+${N}"   # 時間為 UTC+8
+          {
+            echo "第 ${N} 次發佈（commit ${GITHUB_SHA:0:7}）。每個平台各自一個 zip，檔名結尾為 CP${N}。"
+            echo
+            echo "- Windows：解壓後執行 \`pomodoro.exe\`（x64 已含 Qt 執行庫；ARM64 需自備 Qt 6.8.3 ARM64 執行庫）"
+            echo "- macOS：解壓後打開 \`pomodoro.app\`（需本機已安裝 Qt 6.8.3）"
+            echo "- Linux：解壓後執行 \`pomodoro\`（需本機已安裝 Qt 6.8.3 執行庫）"
+            echo "- Android：解壓後安裝 APK（debug 簽署）"
+            echo "- iOS：目前只做編譯，沒有簽署，沒有 zip"
+          } > notes.md
+          gh release create "$TAG" dist/*.zip --target "$GITHUB_SHA" --title "$NAME" --notes-file notes.md --latest
+
+      - name: 預覽（非 main，不發佈）
+        if: github.ref != 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-preview
+          path: dist/*.zip
