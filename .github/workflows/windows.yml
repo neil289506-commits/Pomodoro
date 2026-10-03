@@ -1,34 +1,91 @@
 name: windows
-on: [push, pull_request, workflow_dispatch]
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { name: Windows_AMD64, msvc: x64,         qtarch: win64_msvc2022_64,    qtdir: msvc2022_64 }
-          - { name: Windows_ARM,   msvc: amd64_arm64, qtarch: win64_msvc2022_arm64, qtdir: msvc2022_arm64 }
-    runs-on: windows-2022   # Visual Studio 2022 / MSVC；ARM64 以交叉編譯產生
+          - name: windows-x64
+            msvc_arch: x64
+            qt_target_arch: win64_msvc2022_64
+            qt_target_dir: msvc2022_64
+          - name: windows-arm64
+            msvc_arch: amd64_arm64
+            qt_target_arch: win64_msvc2022_arm64
+            qt_target_dir: msvc2022_arm64
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
-      # 主機（x64）版 Qt：AMD64 直接使用；ARM64 交叉編譯時提供 moc/rcc 等工具
-      - uses: jurplel/install-qt-action@v4
-        with: { version: '6.11.2', host: windows, target: desktop, arch: win64_msvc2022_64, dir: '${{ github.workspace }}/qt-host', modules: qtspeech, cache: true, set-env: ${{ matrix.msvc == 'x64' }} }
-      - uses: jurplel/install-qt-action@v4
-        if: matrix.msvc != 'x64'
-        with: { version: '6.11.2', host: windows, target: desktop, arch: '${{ matrix.qtarch }}', dir: '${{ github.workspace }}/qt-target', modules: qtspeech, cache: true, set-env: false }
+
+      - name: Install Qt host (x64 tools)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.11.2"
+          host: windows
+          target: desktop
+          arch: win64_msvc2022_64
+          dir: ${{ github.workspace }}\qt-host
+          cache: true
+          set-env: false
+
+      - name: Install Qt ARM64 target
+        if: matrix.qt_target_arch == 'win64_msvc2022_arm64'
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.11.2"
+          host: windows
+          target: desktop
+          arch: win64_msvc2022_arm64
+          dir: ${{ github.workspace }}\qt-target
+          cache: true
+          set-env: false
+
       - uses: ilammy/msvc-dev-cmd@v1
-        with: { arch: '${{ matrix.msvc }}' }
-      - name: 設定與編譯
+        with:
+          arch: ${{ matrix.msvc_arch }}
+
+      - name: Configure
         shell: bash
         run: |
+          set -euxo pipefail
+          BUILD_DIR="build-${{ matrix.name }}"
           HOST="${{ github.workspace }}/qt-host/Qt/6.11.2/msvc2022_64"
-          if [ "${{ matrix.msvc }}" = "x64" ]; then
-            cmake -S windows -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=cl -DCMAKE_PREFIX_PATH="$HOST"
+          if [ "${{ matrix.qt_target_arch }}" = "win64_msvc2022_64" ]; then
+            cmake -S windows -B "$BUILD_DIR" -G Ninja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_PREFIX_PATH="$HOST"
           else
-            TARGET="${{ github.workspace }}/qt-target/Qt/6.11.2/${{ matrix.qtdir }}"
-            cmake -S windows -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=cl -DCMAKE_SYSTEM_NAME=Windows -DCMAKE_SYSTEM_PROCESSOR=ARM64 -DCMAKE_PREFIX_PATH="$TARGET" -DQT_HOST_PATH="$HOST"
+            TARGET="${{ github.workspace }}/qt-target/Qt/6.11.2/${{ matrix.qt_target_dir }}"
+            cmake -S windows -B "$BUILD_DIR" -G Ninja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_SYSTEM_NAME=Windows \
+              -DCMAKE_SYSTEM_PROCESSOR=ARM64 \
+              -DCMAKE_PREFIX_PATH="$TARGET" \
+              -DQT_HOST_PATH="$HOST"
           fi
-          cmake --build build
+
+      - name: Build
+        shell: bash
+        run: cmake --build "build-${{ matrix.name }}" --config Release
+
+      - name: Deploy Qt runtime
+        if: matrix.qt_target_arch == 'win64_msvc2022_64'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          HOST="${{ github.workspace }}/qt-host/Qt/6.11.2/msvc2022_64"
+          "$HOST/bin/windeployqt.exe" "build-${{ matrix.name }}/pomodoro.exe"
+
       - uses: actions/upload-artifact@v4
-        with: { name: '${{ matrix.name }}', path: build/pomodoro.exe }
+        with:
+          name: ${{ matrix.name }}
+          path: |
+            build-${{ matrix.name }}/pomodoro.exe
+            build-${{ matrix.name }}/*.dll
+            build-${{ matrix.name }}/plugins/**

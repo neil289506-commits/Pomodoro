@@ -8,6 +8,7 @@
 #include "pomo/Theme.h"
 #include "pomo/TimerRing.h"
 #include <QApplication>
+#include <QCloseEvent>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
@@ -24,6 +25,17 @@ MainWindow::MainWindow() {
     auto toSet = [](const QStringList& v) { return QSet<QString>(v.begin(), v.end()); };
     guardian_.setAllowedApps(toSet(Settings::instance().allowedApps()));
     connect(settings_, &SettingsPage::allowedAppsChanged, this, [this](const QSet<QString>& s) { guardian_.setAllowedApps(s); });
+    watcher_ = createPlatformForegroundWatcher(this);
+    if (watcher_) {
+        connect(watcher_.get(), &IForegroundWatcher::foregroundChanged, &guardian_, &Guardian::onForegroundChanged);
+        connect(watcher_.get(), &IForegroundWatcher::unavailable, this, [this](const QString& why) {
+            guard_->setText(QString("專注守護限制：%1").arg(why));
+        });
+        watcher_->start();
+    } else {
+        connect(qApp, &QApplication::applicationStateChanged, this,
+                [this](Qt::ApplicationState s) { guardian_.onForegroundChanged("other", s == Qt::ApplicationActive); });
+    }
     connect(go_, &QPushButton::clicked, this, [this] { Settings::instance().setRounds(count_->value()); session_.start(count_->value()); });
     connect(stop_, &QPushButton::clicked, &session_, &Session::stop);
     connect(&session_, &Session::ticked, this, [this](int s) { ring_->setState(session_.phase(), s, phaseTotal_); });
@@ -32,8 +44,6 @@ MainWindow::MainWindow() {
     connect(&session_, &Session::pomodoroVoided, this, [this](int i, const QString& r) { History::record(i, false, r); stats_->refresh(); });
     connect(&guardian_, &Guardian::leaveCounted, this, [this](int n) { guard_->setText(QString("專注守護：已離開 %1 / %2 次").arg(n).arg(kMaxLeaves)); });
     connect(&guardian_, &Guardian::violated, &session_, &Session::voidCurrent);
-    // 基本守護：專注時本視窗失去焦點即算離開一次（放行 App 偵測見 COPILOT_TODO.md）
-    connect(qApp, &QApplication::applicationStateChanged, this, [this](Qt::ApplicationState s) { guardian_.onForegroundChanged("other", s == Qt::ApplicationActive); });
     onPhase(Phase::Idle);
 }
 QWidget* MainWindow::buildTimerTab() {
@@ -47,6 +57,7 @@ QWidget* MainWindow::buildTimerTab() {
 }
 void MainWindow::onPhase(Phase p) {
     const bool running = p == Phase::Prep || p == Phase::Work || p == Phase::Rest;
+    running_ = running;
     guardian_.setActive(p == Phase::Work);
     if (p == Phase::Work) guard_->setText(QString("專注守護：已離開 0 / %1 次").arg(kMaxLeaves));
     else if (!running) guard_->setText("專注守護：待命");
@@ -60,6 +71,8 @@ void MainWindow::onPhase(Phase p) {
     setStyleSheet(theme::styleSheet(p));
     count_->setEnabled(!running); go_->setEnabled(!running); stop_->setEnabled(running);
     tabs_->tabBar()->setVisible(p != Phase::Work);   // 專注時隱藏分頁，只留圓環與停止鍵
+    setWindowFlag(Qt::WindowStaysOnTopHint, p == Phase::Work);
+    show();
     if (p == Phase::Work) { tabs_->setCurrentIndex(0); showFullScreen(); } else showNormal();
     switch (p) {
     case Phase::Prep: announcer_.say("準備開始，請整理好工作環境"); break;
@@ -69,5 +82,9 @@ void MainWindow::onPhase(Phase p) {
     case Phase::Voided: announcer_.say("番茄鐘已作廢"); break;
     default: break;
     }
+}
+void MainWindow::closeEvent(QCloseEvent* e) {
+    if (running_) { e->ignore(); return; }
+    QWidget::closeEvent(e);
 }
 }

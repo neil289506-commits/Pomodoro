@@ -11,14 +11,19 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT CMAKE_CXX_COMPILER_ID STREQUAL
 elseif(APPLE AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   message(FATAL_ERROR "macOS 請使用 Clang")
 endif()
-find_package(Qt6 6.11.2 REQUIRED COMPONENTS Widgets TextToSpeech)
+find_package(Qt6 6.11.2 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 6.11.2 QUIET COMPONENTS TextToSpeech)
 # 標頭檔也要列入來源，AUTOMOC 才會處理放在 include/ 的 Q_OBJECT 類別
 file(GLOB POMO_HEADERS CONFIGURE_DEPENDS include/pomo/*.h)
 add_library(pomo_core STATIC ${POMO_HEADERS}
   src/AppInfo.cpp src/Settings.cpp src/Session.cpp src/Guardian.cpp src/History.cpp src/Stats.cpp
   src/Announcer.cpp src/Theme.cpp src/TimerRing.cpp src/StatsPage.cpp src/SettingsPage.cpp src/MainWindow.cpp)
 target_include_directories(pomo_core PUBLIC include)
-target_link_libraries(pomo_core PUBLIC Qt6::Widgets Qt6::TextToSpeech)
+target_link_libraries(pomo_core PUBLIC Qt6::Widgets)
+if(TARGET Qt6::TextToSpeech)
+  target_link_libraries(pomo_core PUBLIC Qt6::TextToSpeech)
+  target_compile_definitions(pomo_core PUBLIC POMO_HAS_TTS=1)
+endif()
 if(MSVC)
   target_compile_options(pomo_core PUBLIC /utf-8 /permissive-)
 endif()
