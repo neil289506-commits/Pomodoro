@@ -48,6 +48,22 @@ jobs:
       - name: Check binary architecture
         run: lipo -info build-macos/pomodoro.app/Contents/MacOS/pomodoro
 
+      - name: 把 Qt 一起打包進 .app（使用者不需安裝）
+        shell: bash
+        run: |
+          set -eo pipefail
+          APP=build-macos/pomodoro.app
+          # 語音外掛不一定會被自動偵測，手動放進去並交給 macdeployqt 處理它的相依
+          mkdir -p "$APP/Contents/PlugIns/texttospeech"
+          cp "$QT_ROOT_DIR"/plugins/texttospeech/*.dylib "$APP/Contents/PlugIns/texttospeech/"
+          args=(); for f in "$APP"/Contents/PlugIns/texttospeech/*.dylib; do args+=("-executable=$f"); done
+          "$QT_ROOT_DIR/bin/macdeployqt" "$APP" "${args[@]}" -verbose=1
+          # Apple Silicon 要求所有程式碼都有簽署：用 ad-hoc 簽署（不是 Apple 開發者簽署，也沒有公證）
+          codesign --force --deep --sign - "$APP"
+          codesign --verify --deep "$APP" && echo "簽署驗證通過"
+          lipo -info "$APP/Contents/MacOS/pomodoro"
+          du -sh "$APP"
+
       - name: 打包 zip（.app）
         shell: bash
         run: |
