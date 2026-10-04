@@ -66,7 +66,7 @@ Linux 需要系統已安裝 speech-dispatcher（`speechd`）才有聲音。
 
 ## 手機安裝教學
 
-Android APK 與 iPhone / iPad IPA（含自行簽署）請見 [docs/MOBILE_USER_GUIDE.md](docs/MOBILE_USER_GUIDE.md)（英文）。
+Android APK 與 iPhone / iPad IPA（含自行簽署）的安裝教學：[繁體中文](docs/MOBILE_USER_GUIDE.zh-TW.md)｜[English](docs/MOBILE_USER_GUIDE.md)。
 
 ## 目前狀態
 

@@ -1,6 +1,6 @@
 # TomatoGuard — Mobile User Guide
 
-How to install the **Android APK** and the **iPhone / iPad IPA** from a GitHub Release.
+How to install the **Android APK** and the **iPhone / iPad IPA** from a GitHub Release. 繁體中文版：[MOBILE_USER_GUIDE.zh-TW.md](MOBILE_USER_GUIDE.zh-TW.md)
 
 > **Early-stage software.** Every build is published as a **Pre-release**. The mobile apps currently have a minimal screen and only part of the desktop feature set. The APK is signed with a debug key, and the IPA is **unsigned**, so neither can be installed from an app store. This guide shows how to install them yourself.
 
