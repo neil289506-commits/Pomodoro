@@ -21,7 +21,7 @@ class Session(private val l: SessionListener) {
         if (phase != Phase.PREP && phase != Phase.WORK) return
         phase = Phase.VOIDED; l.onVoided(done + 1, reason); l.onPhase(phase)
     }
-    fun stop() { if (phase == Phase.REST) { phase = Phase.FINISHED; l.onPhase(phase) } else voidCurrent("手動停止") }
+    fun stop() { if (phase == Phase.REST) { phase = Phase.FINISHED; l.onPhase(phase) } else voidCurrent("manual") }
     private fun onTick() {
         val left = ((endAt - System.currentTimeMillis()) / 1000).toInt()
         if (left > 0) { l.onTick(left); return }

@@ -3,12 +3,13 @@ package org.pomo
 class Guardian(var allowed: Set<String>, private val selfPkg: String, private val onViolated: (String) -> Unit) {
     var active = false; set(v) { field = v; leaves = 0; away = false }
     var leaves = 0; private set
+    var onLeave: ((Int) -> Unit)? = null   // 每多離開一次就通知畫面更新
     private var away = false
     fun onForeground(pkg: String) {
         if (!active) return
         if (pkg == selfPkg || pkg in allowed) { away = false; return }
         if (away) return
-        away = true; leaves++
-        if (leaves > Config.MAX_LEAVES) onViolated("離開視窗超過 ${Config.MAX_LEAVES} 次")
+        away = true; leaves++; onLeave?.invoke(leaves)
+        if (leaves > Config.MAX_LEAVES) onViolated("leaves")
     }
 }

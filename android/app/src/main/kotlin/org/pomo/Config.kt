@@ -4,4 +4,6 @@ object Config {
     const val LONG_REST_EVERY = 4   // 每 4 個番茄鐘後長休息
     const val MAX_LEAVES = 3        // 專注守護：離開超過 3 次即作廢
     const val VOLUME_PERCENT = 50   // 提醒時的音量
+    const val MAX_ROUNDS = 12       // 番茄鐘數量上限
+    const val DEFAULT_ROUNDS = 1    // 預設只做一個
 }
