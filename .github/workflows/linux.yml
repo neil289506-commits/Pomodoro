@@ -35,6 +35,9 @@ jobs:
 
       - name: Install dependencies
         run: |
+          set -o pipefail
+          exec > >(tee apt.log) 2>&1
+          trap 'sleep 1; msg=$(grep -E "^E:|Depends:|Unable|Err:" apt.log | tail -n 8 | cut -c1-220); msg="${msg//$'"'"'\n'"'"'/%0A}"; echo "::error::apt 失敗：%0A${msg}"' ERR
           sudo apt-get update
           sudo apt-get install -y \
             g++ ninja-build cmake pkg-config \
