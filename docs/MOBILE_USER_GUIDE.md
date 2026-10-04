@@ -2,7 +2,7 @@
 
 How to install the **Android APK** and the **iPhone / iPad IPA** from a GitHub Release. 繁體中文版：[MOBILE_USER_GUIDE.zh-TW.md](MOBILE_USER_GUIDE.zh-TW.md)
 
-> **Early-stage software.** Every build is published as a **Pre-release**. The mobile apps currently have a minimal screen and only part of the desktop feature set. The APK is signed with a debug key, and the IPA is **unsigned**, so neither can be installed from an app store. This guide shows how to install them yourself.
+> **Early-stage software.** Every build is published as a **Pre-release**. The mobile apps have the same screens as the desktop app (timer, history, settings) but only part of its feature set. The APK is signed with a debug key, and the IPA is **unsigned**, so neither can be installed from an app store. This guide shows how to install them yourself.
 
 ---
 
@@ -179,7 +179,7 @@ AltStore installs an on-device app that can refresh your sideloaded apps over Wi
 
 ## 6. Known limitations of the mobile builds
 
-- The mobile apps currently have a **minimal screen**; the full timer ring, history page, and settings page are available on desktop only.
+- The mobile apps share the desktop look and **six languages** (switch in Settings), but not every feature: there is no global shortcut or hard lock like on desktop. Android uses screen pinning and Do Not Disturb instead.
 - **iOS** cannot control system volume, turn on Do Not Disturb, or see other apps in the foreground, so the focus guard can only react to the app moving to the background.
 - The browser guard (blocking non-allowed websites) is **not implemented** on any platform yet.
 - Builds are **Pre-releases** and may change without notice.
