@@ -1,6 +1,19 @@
 buildscript {
     repositories { mavenCentral(); gradlePluginPortal() }
-    // 由 repo 根目錄的 i18n/strings.json 產生 Catalog.java（與桌面版、Android 共用同一份字串）。
+    dependencies { classpath 'com.mobidevelop.robovm:robovm-gradle-plugin:2.3.22' }
+}
+apply plugin: 'java'
+apply plugin: 'robovm'
+sourceCompatibility = 11
+targetCompatibility = 11
+repositories { mavenCentral() }
+ext { mainClassName = 'org.pomo.IOSLauncher' }
+
+// 不簽署：沒有 Apple 憑證也能產生 .ipa（簽署設定屬於 Gradle 外掛，不是 robovm.xml）
+robovm {
+    iosSkipSigning = true
+}
+// 由 repo 根目錄的 i18n/strings.json 產生 Catalog.java（與桌面版、Android 共用同一份字串）。
 // 直接產生 Java 原始碼，不依賴資源檔，避免 RoboVM 打包資源的差異。
 def i18nJson = file('../i18n/strings.json')
 def i18nGenDir = "$buildDir/generated/i18n"
@@ -45,19 +58,6 @@ tasks.register('generateI18n') {
 sourceSets.main.java.srcDir i18nGenDir
 compileJava.dependsOn 'generateI18n'
 
-dependencies { classpath 'com.mobidevelop.robovm:robovm-gradle-plugin:2.3.22' }
-}
-apply plugin: 'java'
-apply plugin: 'robovm'
-sourceCompatibility = 11
-targetCompatibility = 11
-repositories { mavenCentral() }
-ext { mainClassName = 'org.pomo.IOSLauncher' }
-
-// 不簽署：沒有 Apple 憑證也能產生 .ipa（簽署設定屬於 Gradle 外掛，不是 robovm.xml）
-robovm {
-    iosSkipSigning = true
-}
 dependencies {
     implementation 'com.mobidevelop.robovm:robovm-rt:2.3.22'
     implementation 'com.mobidevelop.robovm:robovm-cocoatouch:2.3.22'
