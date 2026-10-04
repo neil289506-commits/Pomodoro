@@ -7,6 +7,9 @@ public class Guardian {
     private Set<String> allowed = Set.of();
     private boolean active, away;
     private int leaves;
+    private java.util.function.IntConsumer onLeave = n -> {};
+    public void setOnLeave(java.util.function.IntConsumer c) { onLeave = c; }
+    public int leaves() { return leaves; }
     public Guardian(Consumer<String> onViolated) { this.onViolated = onViolated; }
     public void setAllowed(Set<String> ids) { allowed = ids; }
     public void setActive(boolean on) { active = on; leaves = 0; away = false; }
@@ -14,7 +17,7 @@ public class Guardian {
         if (!active) return;
         if (isSelf || allowed.contains(appId)) { away = false; return; }
         if (away) return;
-        away = true; leaves++;
-        if (leaves > Config.MAX_LEAVES) onViolated.accept("離開 App 超過 " + Config.MAX_LEAVES + " 次");
+        away = true; leaves++; onLeave.accept(leaves);
+        if (leaves > Config.MAX_LEAVES) onViolated.accept("leaves");
     }
 }
