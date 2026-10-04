@@ -36,11 +36,12 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \ libspeechd-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev
+          sudo apt-get install -y \
             g++ ninja-build cmake pkg-config \
             libgl1-mesa-dev libxkbcommon-dev libxkbcommon-x11-dev \
             libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
-            libxcb-render-util0 libxcb-xinerama0 libpulse-dev libx11-dev
+            libxcb-render-util0 libxcb-xinerama0 libpulse-dev libx11-dev \
+            libspeechd-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev
 
       - uses: jurplel/install-qt-action@v4
         with:
