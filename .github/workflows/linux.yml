@@ -39,13 +39,12 @@ jobs:
           exec > >(tee apt.log) 2>&1
           trap 'sleep 1; msg=$(grep -E "^E:|Depends:|Unable|Err:" apt.log | tail -n 8 | cut -c1-220); msg="${msg//$'"'"'\n'"'"'/%0A}"; echo "::error::apt 失敗：%0A${msg}"' ERR
           sudo apt-get update
-          # 只裝執行階段函式庫（不是 -dev）：22.04 的 libgstreamer1.0-dev 會與 runner 預裝的 libunwind 衝突
           sudo apt-get install -y \
             g++ ninja-build cmake pkg-config \
             libgl1-mesa-dev libxkbcommon-dev libxkbcommon-x11-dev \
             libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
             libxcb-render-util0 libxcb-xinerama0 libpulse-dev libx11-dev \
-            libspeechd2 libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0
+            libspeechd2
 
       - uses: jurplel/install-qt-action@v4
         with:

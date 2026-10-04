@@ -30,7 +30,9 @@ export PATH="$PWD/tools:$PATH"
 export APPIMAGE_EXTRACT_AND_RUN=1                      # CI 沒有 FUSE
 export QMAKE="$QT_ROOT_DIR/bin/qmake"
 export LD_LIBRARY_PATH="$QT_ROOT_DIR/lib:${LD_LIBRARY_PATH:-}"
-export EXTRA_QT_PLUGINS="texttospeech;multimedia"      # 語音提醒需要
+# 本程式只用語音提醒（speechd 後端），不播放媒體：移除 GStreamer 播放外掛，避免把一大堆 gst 函式庫塞進 AppImage
+rm -f "$QT_ROOT_DIR"/plugins/multimedia/libgstreamermediaplugin.so
+export EXTRA_QT_PLUGINS="texttospeech"                 # 語音提醒需要
 export EXTRA_PLATFORM_PLUGINS="libqoffscreen.so"       # 讓無螢幕環境也能做啟動測試
 
 tools/linuxdeploy --appdir appdir --executable appdir/usr/bin/pomodoro \
