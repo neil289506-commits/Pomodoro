@@ -16,18 +16,18 @@ public:
     }
     void start() override {
         if (!qEnvironmentVariableIsSet("DISPLAY")) {
-            emit unavailable(QStringLiteral("Wayland/無 DISPLAY：僅支援 X11 前景偵測"));
+            emit unavailable(QStringLiteral("watcher.no_x11"));
             return;
         }
         display_ = XOpenDisplay(nullptr);
         if (!display_) {
-            emit unavailable(QStringLiteral("無法連線 X11；Wayland 需額外 compositor/portal 支援"));
+            emit unavailable(QStringLiteral("watcher.x11_connect"));
             return;
         }
         activeAtom_ = XInternAtom(display_, "_NET_ACTIVE_WINDOW", True);
         pidAtom_ = XInternAtom(display_, "_NET_WM_PID", True);
         if (activeAtom_ == None || pidAtom_ == None) {
-            emit unavailable(QStringLiteral("X11 不支援 _NET_ACTIVE_WINDOW"));
+            emit unavailable(QStringLiteral("watcher.x11_ewmh"));
             return;
         }
         timer_.start();

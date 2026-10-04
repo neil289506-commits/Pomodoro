@@ -1,4 +1,5 @@
 #include "pomo/Lockdown.h"
+#include "pomo/I18n.h"
 #include <QGuiApplication>
 #include <QTimer>
 #include <X11/Xlib.h>
@@ -15,11 +16,11 @@ public:
     ~LinuxLockdown() override { release(); }
     bool engage(WId w) override {
         if (QGuiApplication::platformName() != QStringLiteral("xcb")) {
-            emit failed(QStringLiteral("Wayland 不允許攔截系統快捷鍵：無法硬鎖，只能使用全螢幕置頂"));
+            emit failed(T("lock.err.wayland"));
             return false;
         }
         if (!display_) display_ = XOpenDisplay(nullptr);
-        if (!display_) { emit failed(QStringLiteral("無法連線 X11，無法硬鎖")); return false; }
+        if (!display_) { emit failed(T("lock.err.x11")); return false; }
         poll_.stop(); grabHotkey(false);   // 從暫停回來時清掉熱鍵抓取
         window_ = static_cast<Window>(w);
         paused_ = false;
@@ -39,14 +40,14 @@ public:
         else { poll_.stop(); grabHotkey(false); grab(); }
     }
     QString describe() const override {
-        return QStringLiteral("硬鎖（X11 鍵盤獨佔）：Alt+Tab、Super 等切換快捷鍵已攔截。無法攔截 Ctrl+Alt+F1~F7 切換終端機與電源鍵。");
+        return T("lock.desc.linux");
     }
 private:
     bool grab() {
         const int r = XGrabKeyboard(display_, window_, True, GrabModeAsync, GrabModeAsync, CurrentTime);
         XFlush(display_);
         if (r != GrabSuccess) {
-            emit failed(QStringLiteral("無法取得鍵盤獨佔（X11 錯誤碼 %1，可能有其他程式已獨佔鍵盤）").arg(r));
+            emit failed(T("lock.err.grab").arg(r));
             return false;
         }
         return true;

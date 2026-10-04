@@ -6,7 +6,7 @@ namespace pomo {
 class Settings {
 public:
     static Settings& instance();
-    int rounds() const { return s_.value("rounds", 4).toInt(); }
+    int rounds() const { return s_.value("rounds", 1).toInt(); }
     void setRounds(int n) { s_.setValue("rounds", n); }
     QStringList allowedApps() const { return s_.value("allowedApps").toStringList(); }
     void setAllowedApps(const QStringList& v) { s_.setValue("allowedApps", v); }
