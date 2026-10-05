@@ -5,10 +5,13 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_OBJCXX_STANDARD 20)
 set(CMAKE_OBJCXX_STANDARD_REQUIRED ON)
 add_subdirectory(../qt-core qt-core)
-add_executable(pomodoro MACOSX_BUNDLE src/main.cpp src/PlatformVolume.cpp src/PlatformForegroundWatcher.mm src/PlatformLockdown.mm)
+set(ICON_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../assets/tomato.icns")
+set_source_files_properties("${ICON_FILE}" PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+add_executable(pomodoro MACOSX_BUNDLE "${ICON_FILE}" src/main.cpp src/PlatformVolume.cpp src/PlatformForegroundWatcher.mm src/PlatformLockdown.mm)
 target_link_libraries(pomodoro PRIVATE pomo_core)
 target_link_libraries(pomodoro PRIVATE "-framework AppKit" "-framework Carbon")  # NSWorkspace 前景 App 偵測
 set_target_properties(pomodoro PROPERTIES
   MACOSX_BUNDLE_BUNDLE_NAME "TomatoGuard"
+  MACOSX_BUNDLE_ICON_FILE "tomato.icns"
   MACOSX_BUNDLE_GUI_IDENTIFIER "org.pomo.tomatoguard"
   MACOSX_BUNDLE_SHORT_VERSION_STRING "0.2.0")

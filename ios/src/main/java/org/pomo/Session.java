@@ -22,7 +22,7 @@ public class Session {
         timer.cancel(); phase = Phase.VOIDED; l.onVoided(done + 1, reason); l.onPhase(phase);
     }
     public synchronized void stop() {
-        if (phase == Phase.REST) { timer.cancel(); phase = Phase.FINISHED; l.onPhase(phase); } else voidCurrent("手動停止");
+        if (phase == Phase.REST) { timer.cancel(); phase = Phase.FINISHED; l.onPhase(phase); } else voidCurrent("manual");
     }
     private synchronized void tick() {
         int left = (int) ((endAt - System.currentTimeMillis()) / 1000);

@@ -23,7 +23,10 @@ endif()
 file(GLOB POMO_HEADERS CONFIGURE_DEPENDS include/pomo/*.h)
 add_library(pomo_core STATIC ${POMO_HEADERS}
   src/AppInfo.cpp src/Settings.cpp src/Session.cpp src/Guardian.cpp src/History.cpp src/Stats.cpp
-  src/Announcer.cpp src/Theme.cpp src/TimerRing.cpp src/StatsPage.cpp src/SettingsPage.cpp src/MainWindow.cpp src/AppEntry.cpp src/LauncherDialog.cpp)
+  src/Announcer.cpp src/Theme.cpp src/TimerRing.cpp src/StatsPage.cpp src/SettingsPage.cpp src/MainWindow.cpp src/AppEntry.cpp src/LauncherDialog.cpp src/I18n.cpp)
+# 資源：多語系字串與視窗圖示（靜態函式庫的資源由 Qt 自動連進執行檔）
+qt_add_resources(pomo_core pomo_resources PREFIX "/" BASE "${CMAKE_CURRENT_SOURCE_DIR}/.."
+  FILES ../i18n/strings.json ../assets/tomato.png)
 target_include_directories(pomo_core PUBLIC include)
 target_link_libraries(pomo_core PUBLIC Qt6::Widgets)
 if(TARGET Qt6::TextToSpeech)

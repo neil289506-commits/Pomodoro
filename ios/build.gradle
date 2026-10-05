@@ -13,6 +13,51 @@ ext { mainClassName = 'org.pomo.IOSLauncher' }
 robovm {
     iosSkipSigning = true
 }
+// 由 repo 根目錄的 i18n/strings.json 產生 Catalog.java（與桌面版、Android 共用同一份字串）。
+// 直接產生 Java 原始碼，不依賴資源檔，避免 RoboVM 打包資源的差異。
+def i18nJson = file('../i18n/strings.json')
+def i18nGenDir = "$buildDir/generated/i18n"
+tasks.register('generateI18n') {
+    inputs.file(i18nJson)
+    outputs.dir(i18nGenDir)
+    doLast {
+        def root = new groovy.json.JsonSlurper().parse(i18nJson, 'UTF-8')
+        def jstr = { String s ->
+            def sb = new StringBuilder('"')
+            for (char c : s.toCharArray()) {
+                if (c == (char) '\\') sb.append('\\\\')
+                else if (c == (char) '"') sb.append('\\"')
+                else if (c == (char) '\n') sb.append('\\n')
+                else if (c < 32 || c > 126) sb.append(String.format('\\u%04x', (int) c))
+                else sb.append(c)
+            }
+            sb.append('"').toString()
+        }
+        def langs = root.languages
+        def out = new StringBuilder('package org.pomo;\n\n// 自動產生：請改 i18n/strings.json，不要直接修改。\nfinal class Catalog {\n    private Catalog() {}\n')
+        out.append('    static final String[][] LANGS = {')
+        out.append(langs.collect { "{${jstr(it.code)}, ${jstr(it.name)}}" }.join(', '))
+        out.append('};\n')
+        out.append('    static String lookup(String lang, String key) {\n        String v = get(lang, key);\n        if (v == null) v = get("en", key);\n        return v == null ? key : v;\n    }\n')
+        out.append('    private static String get(String lang, String key) {\n        switch (lang) {\n')
+        langs.eachWithIndex { l, i -> out.append("            case ${jstr(l.code)}: return l${i}(key);\n") }
+        out.append('            default: return null;\n        }\n    }\n')
+        langs.eachWithIndex { l, i ->
+            out.append("    private static String l${i}(String k) {\n        switch (k) {\n")
+            root.strings.each { key, tr ->
+                if (tr[l.code] != null) out.append("            case ${jstr(key)}: return ${jstr(tr[l.code])};\n")
+            }
+            out.append('            default: return null;\n        }\n    }\n')
+        }
+        out.append('}\n')
+        def f = new File(i18nGenDir, 'org/pomo/Catalog.java')
+        f.parentFile.mkdirs()
+        f.setText(out.toString(), 'UTF-8')
+    }
+}
+sourceSets.main.java.srcDir i18nGenDir
+compileJava.dependsOn 'generateI18n'
+
 dependencies {
     implementation 'com.mobidevelop.robovm:robovm-rt:2.3.22'
     implementation 'com.mobidevelop.robovm:robovm-cocoatouch:2.3.22'

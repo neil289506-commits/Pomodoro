@@ -1,4 +1,5 @@
 #include "pomo/Lockdown.h"
+#include "pomo/I18n.h"
 #include <QMetaObject>
 #include <windows.h>
 namespace pomo {
@@ -36,7 +37,7 @@ public:
         g_paused = false; g_owner = this;
         if (g_hook) return true;
         g_hook = SetWindowsHookExW(WH_KEYBOARD_LL, keyProc, GetModuleHandleW(nullptr), 0);
-        if (!g_hook) { emit failed(QStringLiteral("無法安裝鍵盤攔截（錯誤碼 %1）").arg(GetLastError())); return false; }
+        if (!g_hook) { emit failed(T("lock.err.hook").arg(GetLastError())); return false; }
         return true;
     }
     void release() override {
@@ -45,7 +46,7 @@ public:
     }
     void setPaused(bool p) override { g_paused = p; }
     QString describe() const override {
-        return QStringLiteral("硬鎖（鍵盤 hook）：Win 鍵、Alt+Tab、Alt+Esc、Alt+F4、Ctrl+Esc、Ctrl+Shift+Esc 已攔截。無法攔截 Ctrl+Alt+Del。");
+        return T("lock.desc.windows");
     }
 };
 std::unique_ptr<ILockdown> createPlatformLockdown(QObject* parent) { return std::make_unique<WinLockdown>(parent); }

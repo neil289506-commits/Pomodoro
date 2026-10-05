@@ -1,8 +1,8 @@
 #pragma once
 #include <QWidget>
-class QLabel; class QTableWidget;
+class QLabel; class QListWidget;
 namespace pomo {
-// 紀錄頁：成功 / 失敗統計、連勝、逐筆明細（新的在上）
+// 紀錄頁：三張統計卡片（完成、作廢、最佳連勝）與逐筆明細（新的在上）
 class StatsPage : public QWidget {
     Q_OBJECT
 public:
@@ -10,7 +10,7 @@ public:
 public slots:
     void refresh();
 private:
-    QLabel* summary_;
-    QTableWidget* table_;
+    QLabel *done_, *voided_, *best_, *doneCap_, *voidedCap_, *bestCap_, *empty_;
+    QListWidget* list_;
 };
 }

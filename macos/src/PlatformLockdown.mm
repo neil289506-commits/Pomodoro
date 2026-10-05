@@ -1,4 +1,5 @@
 #include "pomo/Lockdown.h"
+#include "pomo/I18n.h"
 #include <QMetaObject>
 #import <AppKit/AppKit.h>
 #include <Carbon/Carbon.h>
@@ -12,7 +13,7 @@ public:
     void release() override { NSApp.presentationOptions = NSApplicationPresentationDefault; }
     void setPaused(bool p) override { paused_ = p; apply(); }
     QString describe() const override {
-        return QStringLiteral("硬鎖（Kiosk 模式）：Cmd+Tab、Dock、選單列、強制結束（Cmd+Option+Esc）、登出已停用。無法攔截電源鍵與開機相關操作。");
+        return T("lock.desc.macos");
     }
 private:
     void apply() {

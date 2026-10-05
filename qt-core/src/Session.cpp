@@ -13,7 +13,7 @@ void Session::voidCurrent(const QString& reason) {
     emit pomodoroVoided(done_ + 1, reason); emit phaseChanged(phase_);
 }
 void Session::stop() {
-    if (phase_ == Phase::Prep || phase_ == Phase::Work) { voidCurrent(QStringLiteral("手動停止")); return; }
+    if (phase_ == Phase::Prep || phase_ == Phase::Work) { voidCurrent(QStringLiteral("manual")); return; }
     if (phase_ == Phase::Rest) { t_.stop(); phase_ = Phase::Finished; emit phaseChanged(phase_); }
 }
 void Session::onTick() {
