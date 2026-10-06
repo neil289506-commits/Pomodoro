@@ -1,4 +1,5 @@
 name: android
+
 on:
   push:
     branches-ignore: [main]   # main 的 push 由 release.yml 統一呼叫本 workflow
@@ -10,27 +11,65 @@ on:
         type: string
         required: false
         default: ''
+    secrets:
+      ANDROID_KEYSTORE_BASE64: { required: false }
+      ANDROID_KEYSTORE_PASSWORD: { required: false }
+      ANDROID_KEY_ALIAS: { required: false }
+      ANDROID_KEY_PASSWORD: { required: false }
 
 permissions:
   contents: read
 
+# android/ 是 Goodtime（adrcotfas/goodtime，GPL-3.0）的原始碼快照，出處見 android/UPSTREAM.md
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: 17 }
+        with:
+          distribution: temurin
+          java-version: 21
       - uses: gradle/actions/setup-gradle@v4
-        with: { gradle-version: '8.9' }
-      - run: gradle assembleDebug
+
+      - name: 簽署金鑰（有設定 Secrets 才用，否則退回上游的 debug 金鑰）
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$STORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            {
+              echo "RELEASE_STORE_FILE=$RUNNER_TEMP/release.jks"
+              echo "RELEASE_STORE_PASSWORD=$STORE_PASSWORD"
+              echo "RELEASE_KEY_ALIAS=$KEY_ALIAS"
+              echo "RELEASE_KEY_PASSWORD=$KEY_PASSWORD"
+            } >> "$GITHUB_ENV"
+            echo "使用你設定的金鑰簽署"
+          else
+            echo "::notice::沒有設定簽署金鑰，使用 debug 金鑰（每次建置簽章都不同，更新前要先解除安裝舊版）"
+          fi
+
+      - name: 編譯 F-Droid 風味的 release APK
         working-directory: android
-      # 純 Kotlin，沒有原生程式碼：同一個 APK 同時支援 ARM（arm64-v8a / armeabi-v7a）與 AMD64（x86_64 / x86）
+        shell: bash
+        run: |
+          set -o pipefail
+          exec > >(tee build.log) 2>&1
+          trap 'sleep 1; msg=$(grep -E "error:|e: |What went wrong|FAILED|Could not|Execution failed" build.log | head -n 12 | cut -c1-220); msg="${msg//$'"'"'\n'"'"'/%0A}"; echo "::error::Gradle 失敗：%0A${msg}"' ERR
+          chmod +x gradlew
+          ./gradlew :androidApp:assembleFdroidRelease --no-daemon --stacktrace
+
       - name: 打包 zip
         shell: bash
         run: |
-          mkdir -p stage && cp android/app/build/outputs/apk/debug/*.apk stage/
-          python3 .github/scripts/package.py "dist/TomatoGuard-android-CP${{ inputs.release_number || 'dev' }}.zip" stage
+          APK=$(find android/androidApp/build/outputs/apk -name '*.apk' | head -1)
+          [ -n "$APK" ] || { echo "::error::找不到 APK"; find android/androidApp/build/outputs | head -20; exit 1; }
+          mkdir -p stage && cp "$APK" "stage/Goodtime-fdroid.apk"
+          python3 .github/scripts/package.py "dist/Goodtime-android-CP${{ inputs.release_number || 'dev' }}.zip" stage
 
       - uses: actions/upload-artifact@v4
         with:
