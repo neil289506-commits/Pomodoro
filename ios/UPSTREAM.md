@@ -20,6 +20,9 @@ cd ios && xcodebuild archive -project Pomodoro.xcodeproj -scheme Pomodoro -confi
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
 ```
 
+## 編譯時產生的檔案
+上游把 `Shared/Env.plist` 放在 `.gitignore`（內容是作者自己的即時動態伺服器網址），但專案會把它打包，缺檔時 `xcodebuild` 會失敗。CI 在編譯前產生一個**占位的** `Env.plist`（`serverURL` 為上游程式碼缺檔時的預設值 `http://127.0.0.1:9000`），所以側載版本不會連到任何伺服器。這個檔案不會被提交到倉庫。
+
 ## 已知限制（來自上游）
 - IPA **未簽署**，無法直接安裝，需要用 AltStore / Sideloadly 等工具以你自己的 Apple ID 重新簽署（見 [手機安裝教學](../docs/MOBILE_USER_GUIDE.zh-TW.md)）。
 - 即時動態（Live Activity）依賴上游作者另外維護的伺服器（po-gl/pomodoro-notification-service），自行側載的版本**不會有即時動態**。

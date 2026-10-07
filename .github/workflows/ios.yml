@@ -22,6 +22,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: 產生占位的 Env.plist
+        # 上游把 Shared/Env.plist 放在 .gitignore（裡面是作者自己的即時動態伺服器網址），專案卻會把它打包。
+        # 沒有這個檔案 xcodebuild 會失敗；這裡放上游程式碼在缺檔時的預設值，即時動態因此不會連到任何伺服器。
+        shell: bash
+        run: |
+          cat > ios/Shared/Env.plist <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>serverURL</key><string>http://127.0.0.1:9000</string>
+          </dict></plist>
+          PLIST
+          plutil -lint ios/Shared/Env.plist
+
       - name: 編譯未簽署的 IPA
         working-directory: ios
         shell: bash
