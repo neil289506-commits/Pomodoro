@@ -2,7 +2,7 @@
 
 How to install the **Android APK** and the **iPhone / iPad IPA** from a GitHub Release. 繁體中文版：[MOBILE_USER_GUIDE.zh-TW.md](MOBILE_USER_GUIDE.zh-TW.md)
 
-> **Early-stage software.** Every build is published as a **Pre-release**. The mobile apps have the same screens as the desktop app (timer, history, settings) but only part of its feature set. The APK is signed with a debug key, and the IPA is **unsigned**, so neither can be installed from an app store. This guide shows how to install them yourself.
+> **About the mobile apps.** The Android and iOS apps are **third-party open-source apps** (GPL-3.0) that this project forks, builds and publishes: **[Goodtime](https://github.com/adrcotfas/goodtime)** for Android (by Adrian Cotfas) and **[Pomodoro](https://github.com/po-gl/pomodoro)** for iOS (by Porter Glines). They are **not** the TomatoGuard desktop app and do not have its hard lock or allowed-app shortcut. Every build is a **Pre-release**; the APK is signed with a test key unless the maintainer configured one, and the IPA is **unsigned**, so neither can be installed from an app store. This guide shows how to install them yourself. Sources and licenses: see [NOTICE.md](../NOTICE.md).
 
 ---
 
@@ -14,8 +14,8 @@ How to install the **Android APK** and the **iPhone / iPad IPA** from a GitHub R
 
 | Device | Asset name | What is inside |
 |---|---|---|
-| Android | `TomatoGuard-android-CP<N>.zip` | an `.apk` file |
-| iPhone / iPad | `TomatoGuard-ios-arm64-CP<N>.zip` | an unsigned `.ipa` file |
+| Android | `Goodtime-android-CP<N>.zip` | an `.apk` file (Goodtime, F-Droid flavor) |
+| iPhone / iPad | `PoGl-Pomodoro-ios-arm64-CP<N>.zip` | an unsigned `.ipa` file (po-gl/pomodoro) |
 
 4. **Unzip** the file. Each zip also contains `BUILD_INFO.txt` with the commit and build run it came from.
 
@@ -44,23 +44,23 @@ Only download files from the official Releases page of this repository.
 3. Install Android's **platform-tools** from <https://developer.android.com/tools/releases/platform-tools> and unzip them.
 4. Connect the phone with a USB cable and accept the **Allow USB debugging?** prompt on the phone.
 5. Open a terminal in the platform-tools folder:
-   - **Windows** (PowerShell): `.\adb devices`, then `.\adb install -r path\to\TomatoGuard.apk`
-   - **macOS** (Terminal): `./adb devices`, then `./adb install -r /path/to/TomatoGuard.apk`
+   - **Windows** (PowerShell): `.\adb devices`, then `.\adb install -r path\to\Goodtime-fdroid.apk`
+   - **macOS** (Terminal): `./adb devices`, then `./adb install -r /path/to/Goodtime-fdroid.apk`
 6. The device should be listed as `device`, and the install command should print `Success`.
 
 ### Permissions the app may ask for
 
 | Permission | Why |
 |---|---|
-| **Usage access** (Settings → Apps → Special app access) | Lets the focus guard see which app is in the foreground |
-| **Do Not Disturb access** | Silences notifications during a focus session |
+| **Notifications** (Android 13+) | Shows the running timer and the end-of-session alerts |
+| **Do Not Disturb access** (optional) | Lets Goodtime silence notifications during a session |
 
 You can deny them; the matching feature will simply not work.
 
 ### Updating or uninstalling
 
 - To update, install the newer APK over the old one.
-- If Android reports a **signature conflict**, uninstall the old version first (**Settings → Apps → TomatoGuard → Uninstall**) and install again. Your history stored in the app is removed with it.
+- If Android reports a **signature conflict**, uninstall the old version first (**Settings → Apps → Goodtime → Uninstall**) and install again. Your history stored in the app is removed with it.
 
 ---
 
@@ -70,7 +70,7 @@ Apple only runs apps that are signed. The IPA in the release is **unsigned**, so
 
 ### What you need
 
-- An iPhone or iPad running **iOS / iPadOS 15.0 or newer**
+- An iPhone or iPad running **iOS / iPadOS 17.0 or newer**
 - A **Windows PC or Mac**
 - A USB cable (a Lightning or USB-C cable that supports data)
 - An **Apple ID**. A free one works. Using a secondary Apple ID just for sideloading is a good idea.
@@ -118,7 +118,7 @@ Sideloadly signs and installs the IPA in one step. Download it from <https://sid
 
 1. On the device, open **Settings → General → VPN & Device Management**.
 2. Under **Developer App**, tap your Apple ID and tap **Trust**.
-3. Open **TomatoGuard** from the Home Screen.
+3. Open **Pomodoro** from the Home Screen.
 
 ### Option B — AltStore (Windows and macOS)
 
@@ -179,7 +179,8 @@ AltStore installs an on-device app that can refresh your sideloaded apps over Wi
 
 ## 6. Known limitations of the mobile builds
 
-- The mobile apps share the desktop look and **six languages** (switch in Settings), but not every feature: there is no global shortcut or hard lock like on desktop. Android uses screen pinning and Do Not Disturb instead.
-- **iOS** cannot control system volume, turn on Do Not Disturb, or see other apps in the foreground, so the focus guard can only react to the app moving to the background.
-- The browser guard (blocking non-allowed websites) is **not implemented** on any platform yet.
+- These are **upstream apps, unmodified**. Their features, translations and bugs are the upstream authors'. Please report app problems to the upstream projects: [Goodtime](https://github.com/adrcotfas/goodtime/issues) and [po-gl/pomodoro](https://github.com/po-gl/pomodoro/issues).
+- **Android:** the package name is the same as the official Goodtime on Google Play / F-Droid. Because the signatures differ, you cannot install this APK over the official one (or the other way around): uninstall one first. If the maintainer has not configured a signing key, every release is signed with a different test key, so you must uninstall the old version before updating.
+- **iOS:** the app was written for TestFlight/App Store distribution. When it is re-signed with a free Apple ID, features that need a paid developer account (App Groups, Live Activities, the Apple Watch app and widgets) may not work. The Live Activity feature also depends on a server run by the original author, so it will not work in a sideloaded build. The upstream project was last updated in October 2024.
+- The TomatoGuard desktop features (hard lock, allowed-app shortcut, focus guard) exist **only on Windows, macOS and Linux**.
 - Builds are **Pre-releases** and may change without notice.

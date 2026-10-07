@@ -32,6 +32,7 @@ jobs:
   android:
     needs: prepare
     uses: ./.github/workflows/android.yml
+    secrets: inherit   # 簽署金鑰（有設定才會用）
     with:
       release_number: ${{ needs.prepare.outputs.number }}
 
@@ -89,8 +90,10 @@ jobs:
             echo "- Windows：解壓後執行 \`pomodoro.exe\`（x64 與 ARM64 都已內含 Qt 執行庫，不需安裝任何開發工具）。第一次執行若出現 SmartScreen 警告，選「其他資訊 → 仍要執行」"
             echo "- macOS：解壓後把 \`pomodoro.app\` 拖到「應用程式」，已內含 Qt。因為沒有 Apple 開發者簽署與公證，第一次請按右鍵 → 打開，或在終端機執行 \`xattr -cr pomodoro.app\`"
             echo "- Linux：解壓後得到 \`.AppImage\`，執行 \`chmod +x\` 後直接執行，已內含 Qt。若出現 FUSE 錯誤，安裝 libfuse2 或加上 \`--appimage-extract-and-run\`；語音提醒需要系統已安裝 speech-dispatcher"
-            echo "- Android：解壓後安裝 APK（debug 金鑰簽署，非正式簽署；需允許安裝未知來源 App）"
-            echo "- iOS：解壓後得到未簽署的 \`.ipa\`，需自行簽署或用 AltStore / Sideloadly 等側載工具安裝（iPhone、iPad）"
+            echo "- Android：解壓後安裝 APK。這是 [Goodtime](https://github.com/adrcotfas/goodtime)（GPL-3.0）的 F-Droid 風味，原始碼在 \`android/\`。沒有設定簽署金鑰時用 debug 金鑰簽署，每個版本的簽章不同，更新前請先解除安裝舊版；需允許安裝未知來源 App"
+            echo "- iOS：解壓後得到**未簽署**的 \`.ipa\`，是 [po-gl/pomodoro](https://github.com/po-gl/pomodoro)（GPL-3.0）的 fork，原始碼在 \`ios/\`。需用 AltStore / Sideloadly 等側載工具以你自己的 Apple ID 簽署（iPhone、iPad）"
+            echo
+            echo "本專案以 GPL-3.0 授權，手機版為上述兩個 GPL-3.0 專案的 fork，出處與授權見 NOTICE.md。"
           } > notes.md
           if ! gh release create "$TAG" dist/*.zip --target "$GITHUB_SHA" --title "$NAME" --notes-file notes.md --prerelease 2> err.log; then
             while IFS= read -r l; do echo "::error::${l:0:380}"; done < err.log

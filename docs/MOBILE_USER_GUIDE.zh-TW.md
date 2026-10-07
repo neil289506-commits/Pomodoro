@@ -2,7 +2,7 @@
 
 如何從 GitHub Release 安裝 **Android APK** 與 **iPhone / iPad IPA**。英文版：[MOBILE_USER_GUIDE.md](MOBILE_USER_GUIDE.md)
 
-> **早期版本。** 每個版本都標示為 **Pre-release**。手機版的畫面與桌面版相同（計時、紀錄、設定），但功能只有桌面版的一部分。APK 使用 debug 金鑰簽署，IPA **沒有簽署**，所以都無法從應用程式商店安裝，需要依照本指南自行安裝。
+> **關於手機版。** Android 與 iOS 的 App 是本專案 fork、編譯並發佈的**第三方開源專案**（GPL-3.0）：Android 是 **[Goodtime](https://github.com/adrcotfas/goodtime)**（作者 Adrian Cotfas），iOS 是 **[Pomodoro](https://github.com/po-gl/pomodoro)**（作者 Porter Glines）。它們**不是** TomatoGuard 桌面版，也沒有桌面版的硬鎖與放行 App 熱鍵。每個版本都標示為 **Pre-release**；APK 除非維護者設定了金鑰，否則用測試金鑰簽署，IPA **沒有簽署**，所以都無法從應用程式商店安裝，需要依照本指南自行安裝。原始碼與授權請見 [NOTICE.md](../NOTICE.md)。
 
 ---
 
@@ -14,8 +14,8 @@
 
 | 裝置 | 檔名 | 內容 |
 |---|---|---|
-| Android | `TomatoGuard-android-CP<N>.zip` | 一個 `.apk` 檔 |
-| iPhone / iPad | `TomatoGuard-ios-arm64-CP<N>.zip` | 一個**未簽署**的 `.ipa` 檔 |
+| Android | `Goodtime-android-CP<N>.zip` | 一個 `.apk` 檔（Goodtime，F-Droid 風味） |
+| iPhone / iPad | `PoGl-Pomodoro-ios-arm64-CP<N>.zip` | 一個**未簽署**的 `.ipa` 檔（po-gl/pomodoro） |
 
 4. **解壓縮**。每個 zip 內還有 `BUILD_INFO.txt`，記錄這個檔案來自哪個 commit 與哪次建置。
 
@@ -44,23 +44,23 @@
 3. 從 <https://developer.android.com/tools/releases/platform-tools> 下載 Android 的 **platform-tools** 並解壓縮。
 4. 用 USB 線連接手機，並在手機上點 **允許 USB 偵錯？**。
 5. 在 platform-tools 資料夾開啟終端機：
-   - **Windows**（PowerShell）：`.\adb devices`，接著 `.\adb install -r 路徑\TomatoGuard.apk`
-   - **macOS**（終端機）：`./adb devices`，接著 `./adb install -r /路徑/TomatoGuard.apk`
+   - **Windows**（PowerShell）：`.\adb devices`，接著 `.\adb install -r 路徑\Goodtime-fdroid.apk`
+   - **macOS**（終端機）：`./adb devices`，接著 `./adb install -r /路徑/Goodtime-fdroid.apk`
 6. 裝置應該顯示為 `device`，安裝指令應該印出 `Success`。
 
 ### App 可能要求的權限
 
 | 權限 | 用途 |
 |---|---|
-| **使用情況存取**（設定 → 應用程式 → 特殊應用程式存取權） | 讓專注守護知道目前在前景的是哪個 App |
-| **勿擾權限** | 專注時段靜音通知 |
+| **通知**（Android 13 以上） | 顯示執行中的計時與結束提醒 |
+| **勿擾權限**（選用） | 讓 Goodtime 在專注時段靜音通知 |
 
 你可以拒絕；對應的功能就不會運作。
 
 ### 更新與解除安裝
 
 - 更新時，直接用新的 APK 覆蓋安裝。
-- 如果 Android 提示**簽章衝突**，請先解除安裝舊版（**設定 → 應用程式 → TomatoGuard → 解除安裝**）再安裝。App 內儲存的紀錄會一起被刪除。
+- 如果 Android 提示**簽章衝突**，請先解除安裝舊版（**設定 → 應用程式 → Goodtime → 解除安裝**）再安裝。App 內儲存的紀錄會一起被刪除。
 
 ---
 
@@ -70,7 +70,7 @@ Apple 只會執行有簽署的 App。Release 裡的 IPA **沒有簽署**，所�
 
 ### 準備工作
 
-- 一支 **iOS / iPadOS 15.0 以上**的 iPhone 或 iPad
+- 一支 **iOS / iPadOS 17.0 以上**的 iPhone 或 iPad
 - 一台 **Windows 電腦或 Mac**
 - 一條 USB 線（要支援資料傳輸的 Lightning 或 USB-C 線）
 - 一個 **Apple ID**。免費的就可以。建議另外申請一個專門用來側載的 Apple ID。
@@ -118,7 +118,7 @@ Sideloadly 一次完成簽署與安裝。從 <https://sideloadly.io> 下載。
 
 1. 在裝置上開啟 **設定 → 一般 → VPN 與裝置管理**。
 2. 在 **開發者 App** 底下點你的 Apple ID，再點 **信任**。
-3. 從主畫面開啟 **TomatoGuard**。
+3. 從主畫面開啟 **Pomodoro**。
 
 ### 方法 B：AltStore（Windows 與 macOS）
 
@@ -179,7 +179,8 @@ AltStore 會在裝置上安裝一個 App，只要電腦的 **AltServer** 開著�
 
 ## 6. 手機版目前的限制
 
-- 手機版與桌面版外觀一致並支援**六種語言**（在「設定」切換），但功能不完全相同：沒有桌面版那樣的全域熱鍵與硬鎖。Android 改用螢幕固定與勿擾模式。
-- **iOS** 無法控制系統音量、無法開啟勿擾模式、也看不到其他 App 是否在前景，所以專注守護只能偵測本 App 是否被切到背景。
-- 瀏覽器守護（封鎖未放行的網站）在所有平台都**還沒有實作**。
+- 這些是**沒有修改過的上游 App**。功能、翻譯與錯誤都是上游作者的；App 本身的問題請到上游回報：[Goodtime](https://github.com/adrcotfas/goodtime/issues)、[po-gl/pomodoro](https://github.com/po-gl/pomodoro/issues)。
+- **Android：** 套件名稱與 Google Play、F-Droid 上的正式版 Goodtime 相同。因為簽章不同，這個 APK 無法覆蓋安裝正式版（反之亦然），兩者只能擇一，需先解除安裝另一個。如果維護者沒有設定簽署金鑰，每個版本都用不同的測試金鑰簽署，更新前必須先解除安裝舊版。
+- **iOS：** 這個 App 是為 TestFlight / App Store 發佈而寫的。用免費 Apple ID 重新簽署後，需要付費開發者帳號的功能（App Groups、即時動態、Apple Watch App 與小工具）可能無法使用；即時動態還依賴原作者架設的伺服器，所以側載版本**不會有即時動態**。上游專案最後更新於 2024 年 10 月。
+- TomatoGuard 的桌面功能（硬鎖、放行 App 熱鍵、專注守護）**只有 Windows、macOS、Linux 才有**。
 - 每個版本都是 **Pre-release**，內容可能隨時改變。
