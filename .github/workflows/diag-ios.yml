@@ -1,15 +1,7 @@
 name: ios
 on:
   push:
-    branches-ignore: [main]   # main 的 push 由 release.yml 統一呼叫本 workflow
-  pull_request:
-  workflow_dispatch:
-  workflow_call:
-    inputs:
-      release_number:
-        type: string
-        required: false
-        default: ''
+    branches: ['diag/**']
 
 permissions:
   contents: read
@@ -43,3 +35,9 @@ jobs:
         with:
           name: zip-ios-arm64
           path: dist/*.zip
+
+      - name: 診斷：把 xcodebuild 的錯誤行輸出為註解
+        if: failure()
+        shell: bash
+        run: |
+          grep -E "error:|\*\* ARCHIVE FAILED|fatal|Unable to find|requires a development team|Build input file" "$RUNNER_TEMP/xcodebuild.log" | sort -u | head -n 8 | cut -c1-300 | while IFS= read -r l; do echo "::error::$l"; done
