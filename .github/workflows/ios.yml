@@ -1,66 +1,138 @@
-name: ios
+
+
+name: iOS unsigned IPA
 
 on:
-  push:
-    branches-ignore: [main]   # main 的 push 由 release.yml 統一呼叫本 workflow
-  pull_request:
   workflow_dispatch:
-  workflow_call:
-    inputs:
-      release_number:
-        type: string
-        required: false
-        default: ''
+  push:
+    branches:
+      - main
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios.yml"
+  pull_request:
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios.yml"
 
 permissions:
   contents: read
 
-# ios/ 是 po-gl/pomodoro（GPL-3.0）的原始碼快照，出處見 ios/UPSTREAM.md
-jobs:
-  build:
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@v4
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
 
-      - name: 產生占位的 Env.plist
-        # 上游把 Shared/Env.plist 放在 .gitignore（裡面是作者自己的即時動態伺服器網址），專案卻會把它打包。
-        # 沒有這個檔案 xcodebuild 會失敗；這裡放上游程式碼在缺檔時的預設值，即時動態因此不會連到任何伺服器。
+jobs:
+  build-ios:
+    name: Build unsigned iOS IPA
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    defaults:
+      run:
+        working-directory: ios
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "16.4"
+
+      - name: Show Xcode environment
+        run: |
+          xcodebuild -version
+          xcodebuild -list -project Pomodoro.xcodeproj
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Create CI Env.plist if required
         shell: bash
         run: |
-          cat > ios/Shared/Env.plist <<'PLIST'
+          if [ ! -f Env.plist ]; then
+            cat > Env.plist <<'PLIST'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0"><dict>
-            <key>serverURL</key><string>http://127.0.0.1:9000</string>
-          </dict></plist>
+          <plist version="1.0">
+          <dict/>
+          </plist>
           PLIST
-          plutil -lint ios/Shared/Env.plist
+          fi
 
-      - name: 編譯未簽署的 IPA
-        working-directory: ios
+      - name: Resolve Swift packages
+        run: |
+          xcodebuild \
+            -resolvePackageDependencies \
+            -project Pomodoro.xcodeproj \
+            -scheme Pomodoro
+
+      - name: Archive iOS app without signing
         shell: bash
         run: |
           set -o pipefail
-          exec > >(tee build.log) 2>&1
-          trap 'sleep 1; msg=$(grep -E "error:|\*\* ARCHIVE FAILED|fatal|Unable to find|requires a development team" build.log | head -n 12 | cut -c1-220); msg="${msg//$'"'"'\n'"'"'/%0A}"; echo "::error::xcodebuild 失敗：%0A${msg}"' ERR
-          xcodebuild -version
-          xcodebuild archive \
-            -project Pomodoro.xcodeproj -scheme Pomodoro -configuration Release \
-            -destination 'generic/platform=iOS' -archivePath "$PWD/build/Pomodoro.xcarchive" \
-            -skipPackagePluginValidation -skipMacroValidation \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM=""
-          mkdir -p build/ipa/Payload
-          cp -R build/Pomodoro.xcarchive/Products/Applications/*.app build/ipa/Payload/
-          (cd build/ipa && zip -qry ../Pomodoro-unsigned.ipa Payload)
-          ls -la build/Pomodoro-unsigned.ipa
 
-      - name: 打包 zip
+          xcodebuild archive \
+            -project Pomodoro.xcodeproj \
+            -scheme Pomodoro \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/Pomodoro.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            | tee "$RUNNER_TEMP/xcodebuild.log"
+
+      - name: Package unsigned IPA
         shell: bash
         run: |
-          mkdir -p stage && cp ios/build/Pomodoro-unsigned.ipa stage/
-          python3 .github/scripts/package.py "dist/PoGl-Pomodoro-ios-arm64-CP${{ inputs.release_number || 'dev' }}.zip" stage
+          set -euo pipefail
 
-      - uses: actions/upload-artifact@v4
+          ARCHIVE="$RUNNER_TEMP/Pomodoro.xcarchive"
+          APP="$ARCHIVE/Products/Applications/Pomodoro.app"
+          OUTPUT="$GITHUB_WORKSPACE/output"
+          PAYLOAD="$RUNNER_TEMP/ipa/Payload"
+
+          if [ ! -d "$APP" ]; then
+            echo "::error::Pomodoro.app was not found in the archive."
+            echo "Archive contents:"
+            find "$ARCHIVE/Products" -maxdepth 5 -print || true
+            exit 1
+          fi
+
+          /usr/libexec/PlistBuddy \
+            -c 'Print :CFBundleIdentifier' \
+            "$APP/Info.plist"
+
+          /usr/libexec/PlistBuddy \
+            -c 'Print :CFBundleExecutable' \
+            "$APP/Info.plist"
+
+          mkdir -p "$PAYLOAD" "$OUTPUT"
+          cp -R "$APP" "$PAYLOAD/Pomodoro.app"
+
+          cd "$RUNNER_TEMP/ipa"
+          /usr/bin/zip -qry "$OUTPUT/Pomodoro-unsigned.ipa" Payload
+
+          echo "IPA created:"
+          ls -lh "$OUTPUT/Pomodoro-unsigned.ipa"
+
+      - name: Collect build log
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/output"
+          if [ -f "$RUNNER_TEMP/xcodebuild.log" ]; then
+            cp "$RUNNER_TEMP/xcodebuild.log" \
+              "$GITHUB_WORKSPACE/output/xcodebuild.log"
+          fi
+
+      - name: Upload IPA and build log
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: zip-ios-arm64
-          path: dist/*.zip
+          name: Pomodoro-iOS-unsigned-${{ github.run_number }}
+          path: output/
+          if-no-files-found: warn
+          retention-days: 7
