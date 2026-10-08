@@ -1,101 +1,187 @@
-name: ios
+name: iOS Unsigned Build
 
 on:
   push:
-    branches-ignore: [main]   # main 的 push 由 release.yml 統一呼叫本 workflow
+    branches-ignore:
+      - main
   pull_request:
   workflow_dispatch:
+    inputs:
+      release_number:
+        description: "Optional release number used in the ZIP filename"
+        required: false
+        default: "dev"
+        type: string
   workflow_call:
     inputs:
       release_number:
-        type: string
+        description: "Optional release number used in the ZIP filename"
         required: false
-        default: ''
+        default: "dev"
+        type: string
 
 permissions:
   contents: read
 
-# ios/ 是 po-gl/pomodoro（GPL-3.0）的原始碼快照，用 Xcode 編譯，出處見 ios/UPSTREAM.md
 jobs:
-  build:
-    name: Build unsigned iOS IPA (Xcode)
+  build-ios:
+    name: Build unsigned iOS app
     runs-on: macos-15
-    timeout-minutes: 45
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Select Xcode
+      - name: Select Xcode 16.4
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: "16.4"
 
-      - name: Show Xcode environment
+      - name: Show build environment
         run: |
           xcodebuild -version
-          xcodebuild -list -project ios/Pomodoro.xcodeproj
-          xcrun --sdk iphoneos --show-sdk-version
+          xcodebuild -showsdks
+          swift --version
 
-      - name: Create placeholder Shared/Env.plist
-        # 專案的 Resources 會打包 Shared/Env.plist（路徑由 Xcode 的 Shared 群組決定，不是 ios/Env.plist）。
-        # 上游把它放在 .gitignore（內容是作者自己的即時動態伺服器網址），缺檔時 xcodebuild 會失敗。
-        # 這裡放上游程式碼缺檔時的預設值，側載版本不會連到任何伺服器。
+      - name: Prepare environment plist
         shell: bash
         run: |
+          set -euo pipefail
+          mkdir -p ios/Shared
           cat > ios/Shared/Env.plist <<'PLIST'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0"><dict>
-            <key>serverURL</key><string>http://127.0.0.1:9000</string>
-          </dict></plist>
+          <plist version="1.0">
+          <dict>
+              <key>serverURL</key>
+              <string>http://localhost:9000</string>
+          </dict>
+          </plist>
           PLIST
           plutil -lint ios/Shared/Env.plist
 
       - name: Resolve Swift packages
-        working-directory: ios
-        run: xcodebuild -resolvePackageDependencies -project Pomodoro.xcodeproj -scheme Pomodoro
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -resolvePackageDependencies \
+            -project ios/Pomodoro.xcodeproj \
+            -scheme Pomodoro
 
-      - name: Archive iOS app without signing
-        working-directory: ios
+      - name: Archive unsigned app
         shell: bash
         run: |
           set -o pipefail
-          exec > >(tee "$RUNNER_TEMP/xcodebuild.log") 2>&1
-          trap 'sleep 1; msg=$(grep -E "error:|\*\* ARCHIVE FAILED|fatal|Unable to find|requires a development team|Build input file" "$RUNNER_TEMP/xcodebuild.log" | sort -u | head -n 8 | cut -c1-260); msg="${msg//$'"'"'\n'"'"'/%0A}"; echo "::error::xcodebuild 失敗：%0A${msg}"' ERR
+          ARCHIVE="$RUNNER_TEMP/Pomodoro.xcarchive"
+          LOG="$RUNNER_TEMP/ios-xcodebuild.log"
+
+          set +e
           xcodebuild archive \
-            -project Pomodoro.xcodeproj -scheme Pomodoro -configuration Release \
-            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Pomodoro.xcarchive" \
-            -skipPackagePluginValidation -skipMacroValidation \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM=""
+            -project ios/Pomodoro.xcodeproj \
+            -scheme Pomodoro \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$ARCHIVE" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY='' \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            2>&1 | tee "$LOG"
+          STATUS=${PIPESTATUS[0]}
+          set -e
 
-      - name: Check and normalize Info.plist
-        shell: bash
-        run: |
-          APP="$RUNNER_TEMP/Pomodoro.xcarchive/Products/Applications/Pomodoro.app"
-          [ -d "$APP" ] || { echo "::error::archive 裡找不到 Pomodoro.app"; find "$RUNNER_TEMP/Pomodoro.xcarchive/Products" -maxdepth 4 | head -20; exit 1; }
-          python3 .github/scripts/check_ios_app.py "$APP"
+          if [[ "$STATUS" -ne 0 ]]; then
+            echo "::error::xcodebuild archive failed with exit code $STATUS"
+            exit "$STATUS"
+          fi
 
-      - name: Package unsigned IPA
+      - name: Check archived app
         shell: bash
         run: |
           set -euo pipefail
-          APP="$RUNNER_TEMP/Pomodoro.xcarchive/Products/Applications/Pomodoro.app"
-          mkdir -p "$RUNNER_TEMP/ipa/Payload" stage
-          cp -R "$APP" "$RUNNER_TEMP/ipa/Payload/Pomodoro.app"
-          (cd "$RUNNER_TEMP/ipa" && /usr/bin/zip -qry "$GITHUB_WORKSPACE/stage/Pomodoro-unsigned.ipa" Payload)
-          ls -lh stage/Pomodoro-unsigned.ipa
-          python3 .github/scripts/package.py "dist/PoGl-Pomodoro-ios-arm64-CP${{ inputs.release_number || 'dev' }}.zip" stage
 
-      - uses: actions/upload-artifact@v4
+          APP="$RUNNER_TEMP/Pomodoro.xcarchive/Products/Applications/Pomodoro.app"
+          echo "Checking app: $APP"
+
+          if [[ ! -d "$APP" ]]; then
+            echo "::error::Archived app not found: $APP"
+            exit 1
+          fi
+
+          INFO_PLIST="$APP/Info.plist"
+          if [[ ! -f "$INFO_PLIST" ]]; then
+            echo "::error::Info.plist not found"
+            exit 1
+          fi
+
+          BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$INFO_PLIST")
+          EXECUTABLE=$(/usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "$INFO_PLIST")
+          VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$INFO_PLIST")
+
+          if [[ -z "$BUNDLE_ID" || -z "$EXECUTABLE" || -z "$VERSION" ]]; then
+            echo "::error::Required app metadata is missing"
+            exit 1
+          fi
+
+          if [[ ! -f "$APP/$EXECUTABLE" ]]; then
+            echo "::error::App executable not found: $EXECUTABLE"
+            exit 1
+          fi
+
+          echo "Bundle ID: $BUNDLE_ID"
+          echo "Executable: $EXECUTABLE"
+          echo "Build version: $VERSION"
+          echo "App validation passed."
+
+      - name: Package unsigned IPA and ZIP
+        shell: bash
+        env:
+          RELEASE_NUMBER: ${{ inputs.release_number || 'dev' }}
+        run: |
+          set -euo pipefail
+
+          APP="$RUNNER_TEMP/Pomodoro.xcarchive/Products/Applications/Pomodoro.app"
+          STAGE="$RUNNER_TEMP/ios-stage"
+          DIST="$RUNNER_TEMP/ios-dist"
+
+          rm -rf "$STAGE" "$DIST"
+          mkdir -p "$STAGE/Payload" "$DIST"
+
+          ditto "$APP" "$STAGE/Payload/Pomodoro.app"
+          (
+            cd "$STAGE"
+            /usr/bin/zip -qry "$DIST/Pomodoro-unsigned.ipa" Payload
+          )
+
+          cp "$DIST/Pomodoro-unsigned.ipa" "$STAGE/Pomodoro-unsigned.ipa"
+          ZIP_NAME="PoGl-Pomodoro-ios-arm64-CP${RELEASE_NUMBER}.zip"
+          /usr/bin/zip -qry "$DIST/$ZIP_NAME" "$STAGE"
+
+          echo "IPA: $DIST/Pomodoro-unsigned.ipa"
+          echo "ZIP: $DIST/$ZIP_NAME"
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pomodoro-unsigned-ipa
+          path: ${{ runner.temp }}/ios-dist/Pomodoro-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload ZIP package
+        uses: actions/upload-artifact@v4
         with:
           name: zip-ios-arm64
-          path: dist/*.zip
+          path: ${{ runner.temp }}/ios-dist/PoGl-Pomodoro-ios-arm64-CP*.zip
+          if-no-files-found: error
+          retention-days: 14
 
-      - name: Upload build log
+      - name: Upload xcodebuild log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ios-xcodebuild-log
-          path: ${{ runner.temp }}/xcodebuild.log
+          path: ${{ runner.temp }}/ios-xcodebuild.log
           if-no-files-found: ignore
           retention-days: 7
